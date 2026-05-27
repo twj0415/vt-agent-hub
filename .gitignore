@@ -1,0 +1,16 @@
+dist/
+node_modules/
+.pnpm-store/
+src-tauri/target/
+src-tauri/gen/
+plan/
+.vscode
+.idea
+.env
+.env.*
+*.log
+coverage
+.vitest
+.vite/
+Thumbs.db
+.DS_Store

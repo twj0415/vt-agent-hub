@@ -1,0 +1,107 @@
+:root {
+  /* macOS 标准 ease：通用过渡；spring：浮层/弹出物。 */
+  --vt-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --vt-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --vt-duration-fast: 120ms;
+  --vt-duration-normal: 150ms;
+  --vt-duration-slow: 260ms;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+html {
+  color-scheme: light;
+  overflow: hidden;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: rgb(var(--vt-color-bg));
+  color: rgb(var(--vt-color-text));
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Helvetica Neue",
+    "Segoe UI Variable",
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    system-ui,
+    sans-serif;
+  font-feature-settings: "kern", "liga", "calt";
+  font-kerning: normal;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.011em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a,
+button,
+[role='button'] {
+  cursor: pointer;
+}
+
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--vt-color-accent) / 0.28);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(var(--vt-color-accent) / 0.08);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--vt-color-text) / 0.18) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  transition: background-color 0.18s ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: rgb(var(--vt-color-text) / 0.18);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--vt-color-text) / 0.32);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

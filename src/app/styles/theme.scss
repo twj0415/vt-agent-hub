@@ -1,0 +1,21 @@
+@use 'sass:string';
+@use './themes/tokens' as *;
+
+@each $name, $tokens in $themes {
+  :root[data-theme='#{$name}'] {
+    @each $key, $value in $tokens {
+      @if string.index($key, 'shadow-') == 1 {
+        --vt-#{$key}: #{$value};
+      } @else {
+        --vt-color-#{$key}: #{$value};
+      }
+    }
+  }
+}
+
+:root {
+  --vt-radius-xl: 32px;
+  --vt-radius-lg: 24px;
+  --vt-radius-md: 18px;
+  --vt-radius-sm: 14px;
+}

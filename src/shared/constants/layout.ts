@@ -1,0 +1,1 @@
+export const DETAIL_DRAWER_WIDTH = 720
