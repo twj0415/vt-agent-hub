@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
-  import { PlusOutlined } from '@ant-design/icons-vue';
   import { useI18n } from 'vue-i18n';
   import CodePreview from '@/shared/components/feedback/CodePreview.vue';
   import VTEntityDetailDrawer from '@/shared/components/feedback/VTEntityDetailDrawer.vue';
@@ -126,12 +125,6 @@
 
     <template #tab-skills>
       <div class="min-h-0 flex-1 overflow-auto">
-        <div class="mb-3 flex justify-end">
-          <a-button size="small" type="primary" :disabled="loading || disabled" @click="toolsStore.openSkillBinding()">
-            <template #icon><PlusOutlined /></template>
-            {{ t('common.bind') }}
-          </a-button>
-        </div>
         <SkillBindList
           :skills="boundSkills"
           :empty-text="t('pages.tools.binding.empty')"

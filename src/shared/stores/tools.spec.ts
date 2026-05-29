@@ -206,6 +206,182 @@ describe('tools store global AGENTS flow', () => {
     expect(store.bindOpen).toBe(false)
   })
 
+  it('installs added skills and uninstalls removed skills when saving bindings', async () => {
+    vi.spyOn(tauriApi, 'installSkillAsset').mockResolvedValue({
+      success: true,
+      data: {
+        platformRoot: '',
+        libraryPath: '',
+        librarySkillMdPath: '',
+        runtimePath: '',
+        runtimeSkillMdPath: '',
+        libraryExists: true,
+        runtimeExists: true,
+        skillMdValid: true,
+        installState: 602,
+        statusDetail: 'Installed.',
+        libraryBody: '',
+        runtimeBody: '',
+        libraryTree: [],
+        runtimeTree: [],
+        installActionReady: false,
+        uninstallActionReady: true,
+        repairActionReady: false,
+        markStaleActionReady: true,
+      },
+    })
+    vi.spyOn(tauriApi, 'uninstallSkillAsset').mockResolvedValue({
+      success: true,
+      data: {
+        platformRoot: '',
+        libraryPath: '',
+        librarySkillMdPath: '',
+        runtimePath: '',
+        runtimeSkillMdPath: '',
+        libraryExists: true,
+        runtimeExists: false,
+        skillMdValid: true,
+        installState: 601,
+        statusDetail: 'Uninstalled.',
+        libraryBody: '',
+        runtimeBody: '',
+        libraryTree: [],
+        runtimeTree: [],
+        installActionReady: true,
+        uninstallActionReady: false,
+        repairActionReady: false,
+        markStaleActionReady: false,
+      },
+    })
+    vi.spyOn(tauriApi, 'saveToolSkillBindings').mockResolvedValue({ success: true, data: true })
+    vi.spyOn(tauriApi, 'getToolsSnapshot').mockResolvedValue({
+      success: true,
+      data: {
+        tools: [{ id: 101, name: 'Codex', enabled: true }],
+        globalRuleBinding: null,
+        skillPackBinding: null,
+        skillInstalls: [],
+      },
+    })
+    vi.spyOn(tauriApi, 'getToolDiagnostics').mockResolvedValue({
+      success: true,
+      data: {
+        installationDetected: true,
+        liveConfigPath: '',
+        credentialState: 'ready',
+        credentialStateCode: 502,
+        skillState: 'installed',
+        skillStateCode: 602,
+        projectOutputState: 'ready',
+        projectOutputStateCode: 502,
+        repairState: 'ready',
+        repairStateCode: 502,
+        repairHint: '',
+      },
+    })
+    vi.spyOn(tauriApi, 'scanLibraryDiagnostics').mockResolvedValue({
+      success: true,
+      data: {
+        projectCount: 0,
+        ruleCount: 0,
+        skillCount: 2,
+        libraryRoot: '',
+        createdPaths: [],
+        existingPaths: [],
+        issueCount: 0,
+        healthState: 'normal',
+        healthStateCode: 702,
+        issues: [],
+      },
+    })
+    vi.spyOn(tauriApi, 'getLibrarySnapshot').mockResolvedValue({
+      success: true,
+      data: {
+        rules: [],
+        skills: [
+          {
+            assetId: 1,
+            versionId: 11,
+            versionNo: 1,
+            key: 'old-skill',
+            code: 401,
+            name: 'old-skill',
+            categoryCode: 401,
+            state: 502,
+            summary: '',
+            body: 'old',
+            toolIds: [101],
+            runtime: {
+              platformRoot: '',
+              libraryPath: '',
+              librarySkillMdPath: '',
+              runtimePath: '',
+              runtimeSkillMdPath: '',
+              libraryExists: true,
+              runtimeExists: true,
+              skillMdValid: true,
+              installState: 602,
+              statusDetail: '',
+              libraryBody: '',
+              runtimeBody: '',
+              libraryTree: [],
+              runtimeTree: [],
+              installActionReady: false,
+              uninstallActionReady: true,
+              repairActionReady: false,
+              markStaleActionReady: true,
+            },
+          },
+          {
+            assetId: 2,
+            versionId: 12,
+            versionNo: 1,
+            key: 'new-skill',
+            code: 401,
+            name: 'new-skill',
+            categoryCode: 401,
+            state: 502,
+            summary: '',
+            body: 'new',
+            toolIds: [],
+            runtime: {
+              platformRoot: '',
+              libraryPath: '',
+              librarySkillMdPath: '',
+              runtimePath: '',
+              runtimeSkillMdPath: '',
+              libraryExists: true,
+              runtimeExists: false,
+              skillMdValid: true,
+              installState: 601,
+              statusDetail: '',
+              libraryBody: '',
+              runtimeBody: '',
+              libraryTree: [],
+              runtimeTree: [],
+              installActionReady: true,
+              uninstallActionReady: false,
+              repairActionReady: false,
+              markStaleActionReady: false,
+            },
+          },
+        ],
+      },
+    })
+
+    const { useSkillStore } = await import('./skills')
+    const skillStore = useSkillStore()
+    await skillStore.hydrateFromSnapshot()
+
+    const store = useToolsStore()
+    const result = await store.saveToolSkillIdsAndSync(101, [2])
+
+    expect(result).toBe('saved')
+    expect(tauriApi.installSkillAsset).toHaveBeenCalledWith(101, 2)
+    expect(tauriApi.uninstallSkillAsset).toHaveBeenCalledWith(101, 1)
+    expect(tauriApi.saveToolSkillBindings).toHaveBeenCalledWith(101, [2])
+  })
+
   it('saves selected Claude rules through the same global output flow', async () => {
     vi.spyOn(tauriApi, 'saveToolGlobalRuleBindings').mockResolvedValue({
       success: true,

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 24220",
+    "dev": "vite --host 127.0.0.1 --port 24220 --strictPort",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 24221",
     "typecheck": "vue-tsc --noEmit",

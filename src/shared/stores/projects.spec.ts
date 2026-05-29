@@ -247,9 +247,9 @@ describe('projects store', () => {
       success: true,
       data: {
         projectId: 1,
-        toolId: 101,
+        toolId: 102,
         projectName: 'Example Project',
-        targetPath: 'C:\\Users\\Example\\Desktop\\ExampleProject\\AGENTS.md',
+        targetPath: 'C:\\Users\\Example\\Desktop\\ExampleProject\\CLAUDE.md',
         targetExists: false,
         managed: false,
         ruleCount: 1,
@@ -262,13 +262,13 @@ describe('projects store', () => {
       success: true,
       data: {
         projectId: 1,
-        toolId: 101,
+        toolId: 102,
         operation: 'project.apply_agents',
-        targetPath: 'C:\\Users\\Example\\Desktop\\ExampleProject\\AGENTS.md',
+        targetPath: 'C:\\Users\\Example\\Desktop\\ExampleProject\\CLAUDE.md',
         backupPath: null,
         managed: true,
         created: true,
-        message: 'Project AGENTS.md applied.',
+        message: 'Project CLAUDE.md applied.',
       },
     })
     vi.spyOn(tauriApi, 'getProjectContextSnapshot').mockResolvedValue({
@@ -325,12 +325,14 @@ describe('projects store', () => {
     await store.hydrateFromSnapshot()
 
     store.openRuleBinding()
+    store.setBindingTargetToolId(102)
     await store.applyRuleBinding()
 
     expect(store.activeItem?.ruleBindings[0]?.packVersionId).toBe(2)
+    expect(store.bindingDraft.targetToolId).toBe(102)
     expect(tauriApi.saveProjectRuleBindings).toHaveBeenCalledWith(1, null, [2])
-    expect(scanSpy).toHaveBeenCalledWith(1, 101)
-    expect(applySpy).toHaveBeenCalledWith(1, 101, true)
+    expect(scanSpy).toHaveBeenCalledWith(1, 102)
+    expect(applySpy).toHaveBeenCalledWith(1, 102, true)
   })
 
   it('rolls project rule bindings back when project output write fails', async () => {

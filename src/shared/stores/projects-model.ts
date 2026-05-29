@@ -5,11 +5,15 @@ import type {
   ProjectRuleBinding,
 } from '@/shared/api/client'
 import { defaultProjectTypeCode, projectTypeCodes } from '@/shared/taxonomy'
+import { toolIds } from '@/shared/tool-registry'
 
 export type ProjectType = (typeof projectTypeCodes)[keyof typeof projectTypeCodes]
 
+export type RuleBindingTargetToolId = typeof toolIds.codex | typeof toolIds.claude
+
 export type RuleBindingSelection = {
   selectedRuleIds: number[]
+  targetToolId: RuleBindingTargetToolId
 }
 
 export type ProjectItem = {
@@ -59,5 +63,6 @@ export function createProjectDraft(): ProjectDraft {
 export function createRuleBindingSelection(): RuleBindingSelection {
   return {
     selectedRuleIds: [],
+    targetToolId: toolIds.codex,
   }
 }

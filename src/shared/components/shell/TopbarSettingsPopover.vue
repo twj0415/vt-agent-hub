@@ -2,23 +2,15 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CheckOutlined, ReloadOutlined, RightOutlined, SettingOutlined } from '@ant-design/icons-vue'
+import { ReloadOutlined, RightOutlined, SettingOutlined } from '@ant-design/icons-vue'
 import { appRoutes } from '@/shared/config/routes'
 import { useAppStore } from '@/shared/stores/app'
-import { useSettingsStore } from '@/shared/stores/settings'
-import type { LocaleCode } from '@/shared/stores/i18n'
-import { themePresets, type ThemePreset } from '@/shared/stores/theme'
+import VTPreferenceSwitch from './VTPreferenceSwitch.vue'
 
 const router = useRouter()
 const { t } = useI18n()
 const appStore = useAppStore()
-const settingsStore = useSettingsStore()
 const settingsOpen = ref(false)
-
-const localeOptions: Array<{ value: LocaleCode; labelKey: string }> = [
-  { value: 'zh-CN', labelKey: 'language.zhCN' },
-  { value: 'en-US', labelKey: 'language.enUS' },
-]
 
 function closeMenu() {
   settingsOpen.value = false
@@ -35,15 +27,6 @@ function refreshApp() {
   void appStore.bootstrapAll()
 }
 
-function setLocale(value: LocaleCode) {
-  settingsStore.setLocaleCode(value)
-  closeMenu()
-}
-
-function setTheme(value: ThemePreset) {
-  settingsStore.setThemePreset(value)
-  closeMenu()
-}
 </script>
 
 <template>
@@ -62,60 +45,25 @@ function setTheme(value: ThemePreset) {
 
     <template #content>
       <div class="topbar-settings-panel text-text">
-        <div class="topbar-panel-actions">
-          <button type="button" class="topbar-row is-primary" @click="openSettings">
-            <span>{{ t('topbar.settingsCenter') }}</span>
-            <RightOutlined class="topbar-row-icon" />
-          </button>
+        <button type="button" class="topbar-settings-entry" @click="openSettings">
+          <span>{{ t('topbar.settingsCenter') }}</span>
+          <RightOutlined class="topbar-row-icon" />
+        </button>
+
+        <div class="topbar-panel-divider" />
+
+        <div class="topbar-panel-bottom">
+          <VTPreferenceSwitch compact />
+
           <button
             type="button"
-            class="topbar-row"
+            class="topbar-refresh-button"
             :disabled="appStore.loading"
             @click="refreshApp"
           >
-            <span>{{ t('common.refresh') }}</span>
-            <ReloadOutlined class="topbar-row-icon" :class="appStore.loading ? 'animate-spin' : ''" />
+            <ReloadOutlined :class="appStore.loading ? 'animate-spin' : ''" />
           </button>
         </div>
-
-        <section class="topbar-panel-section">
-          <div class="topbar-section-title">{{ t('settings.language.label') }}</div>
-          <div class="topbar-option-list compact">
-            <button
-              v-for="item in localeOptions"
-              :key="item.value"
-              type="button"
-              class="topbar-option-row"
-              :class="settingsStore.localeCode === item.value ? 'is-active' : ''"
-              @click="setLocale(item.value)"
-            >
-              <span class="topbar-option-main">{{ t(item.labelKey) }}</span>
-              <CheckOutlined class="topbar-option-check" />
-            </button>
-          </div>
-        </section>
-
-        <section class="topbar-panel-section">
-          <div class="topbar-section-title">{{ t('settings.theme.label') }}</div>
-          <div class="topbar-option-list theme-list">
-            <button
-              v-for="item in themePresets"
-              :key="item.value"
-              type="button"
-              class="topbar-option-row"
-              :class="settingsStore.themePreset === item.value ? 'is-active' : ''"
-              @click="setTheme(item.value)"
-            >
-              <span class="theme-swatch-mini" :data-theme-preview="item.value" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </span>
-              <span class="topbar-option-main">{{ t(item.labelKey) }}</span>
-              <CheckOutlined class="topbar-option-check" />
-            </button>
-          </div>
-        </section>
       </div>
     </template>
   </a-popover>
@@ -124,8 +72,8 @@ function setTheme(value: ThemePreset) {
 <style scoped>
 :global(.topbar-settings-popover .ant-popover-inner) {
   overflow: hidden;
-  border: 1px solid rgb(var(--vt-color-line) / 0.52);
-  border-radius: 16px;
+  border: 1px solid rgb(var(--vt-color-line-strong, var(--vt-color-line)) / 0.5);
+  border-radius: 18px;
   background: rgb(var(--vt-color-panel-strong) / 0.94);
   box-shadow: var(--vt-shadow-surface-lg);
   backdrop-filter: blur(22px) saturate(180%);
@@ -149,70 +97,63 @@ function setTheme(value: ThemePreset) {
 }
 
 .topbar-settings-panel {
-  width: 244px;
-  padding: 8px;
-}
-
-.topbar-panel-actions,
-.topbar-panel-section {
-  border-radius: 12px;
-  background: rgb(var(--vt-color-text) / 0.025);
-}
-
-.topbar-panel-actions {
-  padding: 4px;
-}
-
-.topbar-panel-section {
-  margin-top: 8px;
+  width: 206px;
   padding: 7px;
 }
 
-.topbar-section-title {
-  padding: 0 5px 6px;
-  color: rgb(var(--vt-color-muted) / 0.78);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.topbar-row,
-.topbar-option-row {
+.topbar-settings-entry {
   display: flex;
   width: 100%;
-  align-items: center;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: rgb(var(--vt-color-text));
-  text-align: left;
-  transition: background-color var(--vt-duration-fast) var(--vt-ease-standard),
-    color var(--vt-duration-fast) var(--vt-ease-standard);
-}
-
-.topbar-row {
   height: 30px;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border-radius: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(var(--vt-color-text) / 0.045);
+  color: rgb(var(--vt-color-text));
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
   padding: 0 9px;
-  font-size: 13px;
-  font-weight: 500;
+  text-align: left;
 }
 
-.topbar-row.is-primary {
-  font-weight: 650;
+.topbar-settings-entry:hover {
+  background: rgb(var(--vt-color-text) / 0.07);
 }
 
-.topbar-row:hover:not(:disabled),
-.topbar-option-row:hover,
-.topbar-option-row.is-active {
-  background: rgb(var(--vt-color-text) / 0.055);
+.topbar-panel-divider {
+  height: 1px;
+  margin: 6px 2px;
+  background: rgb(var(--vt-color-line-strong, var(--vt-color-line)) / 0.5);
 }
 
-.topbar-row:disabled {
+.topbar-panel-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-refresh-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(var(--vt-color-line) / 0.5);
+  border-radius: 999px;
+  background: rgb(var(--vt-color-bg) / 0.5);
+  color: rgb(var(--vt-color-muted));
+  cursor: pointer;
+}
+
+.topbar-refresh-button:hover:not(:disabled) {
+  background: rgb(var(--vt-color-text) / 0.06);
+  color: rgb(var(--vt-color-text));
+}
+
+.topbar-refresh-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -222,75 +163,4 @@ function setTheme(value: ThemePreset) {
   color: rgb(var(--vt-color-muted) / 0.82);
   font-size: 10px;
 }
-
-.topbar-option-list {
-  display: grid;
-  gap: 2px;
-}
-
-.topbar-option-list.theme-list {
-  max-height: 184px;
-  overflow-y: auto;
-  padding-right: 1px;
-}
-
-.topbar-option-row {
-  height: 30px;
-  gap: 8px;
-  border-radius: 9px;
-  padding: 0 8px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.topbar-option-main {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.topbar-option-check {
-  flex-shrink: 0;
-  color: rgb(var(--vt-color-accent));
-  font-size: 11px;
-  opacity: 0;
-}
-
-.topbar-option-row.is-active .topbar-option-check {
-  opacity: 1;
-}
-
-.theme-swatch-mini {
-  display: grid;
-  width: 24px;
-  height: 16px;
-  flex-shrink: 0;
-  grid-template-columns: 1fr 1fr;
-  overflow: hidden;
-  border: 1px solid rgb(var(--vt-color-line) / 0.55);
-  border-radius: 6px;
-  background: rgb(var(--vt-color-panel-strong));
-}
-
-.theme-swatch-mini span:first-child {
-  grid-row: span 2;
-}
-
-.theme-swatch-mini[data-theme-preview='apple'] span:first-child { background: #f5f5f7; }
-.theme-swatch-mini[data-theme-preview='apple'] span:nth-child(2) { background: #ffffff; }
-.theme-swatch-mini[data-theme-preview='apple'] span:nth-child(3) { background: #0066cc; }
-
-.theme-swatch-mini[data-theme-preview='warm'] span:first-child { background: #f4efe7; }
-.theme-swatch-mini[data-theme-preview='warm'] span:nth-child(2) { background: #fffdf8; }
-.theme-swatch-mini[data-theme-preview='warm'] span:nth-child(3) { background: #c8612d; }
-
-.theme-swatch-mini[data-theme-preview='clean'] span:first-child { background: #f5f5f7; }
-.theme-swatch-mini[data-theme-preview='clean'] span:nth-child(2) { background: #fbfbfd; }
-.theme-swatch-mini[data-theme-preview='clean'] span:nth-child(3) { background: #0071e3; }
-
-.theme-swatch-mini[data-theme-preview='dark'] span:first-child { background: #0c0d12; }
-.theme-swatch-mini[data-theme-preview='dark'] span:nth-child(2) { background: #181922; }
-.theme-swatch-mini[data-theme-preview='dark'] span:nth-child(3) { background: #768eff; }
 </style>

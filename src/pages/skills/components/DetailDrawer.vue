@@ -33,15 +33,15 @@ const activeToolTags = computed(() => {
           <StatusBadge :tone="statusTone(skillStore.activeItem)" :label="statusLabel(skillStore.activeItem)" />
         </div>
         <div class="mt-3 grid gap-2 border-t border-line/70 pt-3 text-sm leading-6 text-text">
-          <div class="grid grid-cols-[72px_minmax(0,1fr)] gap-3">
+          <div class="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
             <span class="text-muted">{{ t('catalog.detail.category') }}:</span>
             <span>{{ categoryLabel(skillStore.activeItem.categoryCode) }}</span>
           </div>
-          <div class="grid grid-cols-[72px_minmax(0,1fr)] gap-3">
+          <div class="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
             <span class="text-muted">{{ t('common.version') }}:</span>
             <span>v{{ skillStore.activeItem.versionNo }}</span>
           </div>
-          <div class="grid grid-cols-[72px_minmax(0,1fr)] gap-3">
+          <div class="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
             <span class="text-muted">{{ t('nav.tools') }}:</span>
             <EntityTagList :items="activeToolTags" />
           </div>

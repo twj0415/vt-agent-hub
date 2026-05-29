@@ -3,8 +3,10 @@ import {
   applyRepositoryImport,
   deleteSkillAsset,
   getLibrarySnapshot,
+  importGitHubRepoSkills,
   installSkillAsset,
   markSkillAssetStale,
+  previewGitHubRepoImport,
   previewRepositoryImport,
   repairSkillAsset,
   saveSkillAsset,
@@ -18,15 +20,29 @@ import {
   type EntityState,
   type SkillInstallState,
 } from '@/shared/constants/status'
-import type { RepositoryImportReport, SkillRuntime } from '@/shared/api/client'
+import type {
+  GitHubRepoImportResult,
+  GitHubRepoPreview,
+  GitHubSkillImportSelection,
+  RepositoryImportReport,
+  SkillRuntime,
+} from '@/shared/api/client'
 import { resolveAppError, resolveUnknownError, translateKey } from '@/shared/i18n/translate'
 import { isTauriRuntime } from '@/shared/utils/runtime'
 import { notifyError, notifySuccess, notifyWarning } from '@/shared/utils/notify'
 import { firstIssue, skillDraftSchema } from '@/shared/validation/forms'
 import { defaultSkillCategoryCode } from '@/shared/taxonomy'
 import { useToolContextStore } from './tool-context'
+import { useToolsStore } from './tools'
 
 type SkillSort = 'name' | 'code'
+type GitHubImportStep = 'input' | 'preview' | 'result'
+type GitHubSelectionState = GitHubSkillImportSelection & { selected: boolean }
+
+type SkillToolBindDraft = {
+  skillId: number | null
+  selectedToolIds: number[]
+}
 
 export type SkillItem = {
   id: number
@@ -68,11 +84,30 @@ function createSkillDraft(): SkillDraft {
   }
 }
 
+function createToolBindDraft(): SkillToolBindDraft {
+  return {
+    skillId: null,
+    selectedToolIds: [],
+  }
+}
+
 function sortItems(items: SkillItem[], sort: SkillSort) {
   return [...items].sort((a, b) => {
     if (sort === 'code') return a.code - b.code
     return a.name.localeCompare(b.name)
   })
+}
+
+function buildGitHubSelections(preview: GitHubRepoPreview): Record<string, GitHubSelectionState> {
+  return Object.fromEntries(preview.skills.map((skill) => [
+    skill.sourcePath,
+    {
+      sourcePath: skill.sourcePath,
+      selected: true,
+      resolution: skill.conflict ? 'skip' : 'overwrite',
+      renamedSkillId: skill.skillId,
+    },
+  ]))
 }
 
 function emptyRuntime(name: string, body: string): SkillRuntime {
@@ -114,14 +149,22 @@ export const useSkillStore = defineStore('skills', {
     detailOpen: false,
     formOpen: false,
     importOpen: false,
+    bindOpen: false,
     importLoading: false,
+    bindLoading: false,
     draft: createSkillDraft(),
+    bindDraft: createToolBindDraft(),
     importDraft: {
       source: '',
       branch: '',
       conflictStrategy: 'skip' as 'skip' | 'rename' | 'overwrite',
     },
     repositoryImportReport: null as RepositoryImportReport | null,
+    githubPreview: null as GitHubRepoPreview | null,
+    githubImportResult: null as GitHubRepoImportResult | null,
+    githubSelections: {} as Record<string, GitHubSelectionState>,
+    githubSelectedPath: '',
+    githubStep: 'input' as GitHubImportStep,
     actionError: '',
   }),
   getters: {
@@ -223,6 +266,70 @@ export const useSkillStore = defineStore('skills', {
     setFormOpen(value: boolean) {
       this.formOpen = value
     },
+    setBindOpen(value: boolean) {
+      this.bindOpen = value
+    },
+    openToolBinding(skillId: number) {
+      const skill = this.items.find((item) => item.id === skillId)
+      if (!skill) return
+      this.bindDraft = {
+        skillId,
+        selectedToolIds: [...skill.toolIds],
+      }
+      this.bindOpen = true
+    },
+    toggleBindTool(toolId: number) {
+      if (this.bindDraft.selectedToolIds.includes(toolId)) {
+        this.bindDraft.selectedToolIds = this.bindDraft.selectedToolIds.filter((id) => id !== toolId)
+        return
+      }
+      this.bindDraft.selectedToolIds = [...this.bindDraft.selectedToolIds, toolId]
+    },
+    async saveToolBinding() {
+      const skillId = this.bindDraft.skillId
+      if (skillId == null) return
+
+      this.bindLoading = true
+      try {
+        const toolsStore = useToolsStore()
+        let changed = false
+        for (const tool of toolsStore.items) {
+          if (!toolsStore.isToolEnabled(tool.id)) continue
+          const currentSkillIds = this.items
+            .filter((item) => item.toolIds.includes(tool.id))
+            .map((item) => item.id)
+          const exists = currentSkillIds.includes(skillId)
+          const checked = this.bindDraft.selectedToolIds.includes(tool.id)
+          let nextSkillIds = currentSkillIds
+          if (checked && !exists) nextSkillIds = [...currentSkillIds, skillId]
+          if (!checked && exists) nextSkillIds = currentSkillIds.filter((id) => id !== skillId)
+          if (nextSkillIds.length === currentSkillIds.length && nextSkillIds.every((id, index) => id === currentSkillIds[index])) continue
+
+          const result = await toolsStore.saveToolSkillIdsAndSync(tool.id, nextSkillIds, {
+            notify: false,
+            refreshSkills: false,
+            refreshSnapshot: false,
+          })
+          if (result === 'failed') {
+            this.actionError = toolsStore.globalError || translateKey('errors.skillBindingsSaveFailed')
+            notifyError(this.actionError)
+            return
+          }
+          changed = true
+        }
+
+        if (changed) await toolsStore.hydrateFromSnapshot()
+        await this.hydrateFromSnapshot()
+        this.bindOpen = false
+        this.actionError = ''
+        notifySuccess(translateKey('feedback.skillBindingsSaved'))
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.skillBindingsSaveFailed')
+        notifyError(this.actionError)
+      } finally {
+        this.bindLoading = false
+      }
+    },
     setDraftField<K extends keyof SkillDraft>(key: K, value: SkillDraft[K]) {
       this.draft[key] = value
     },
@@ -286,7 +393,7 @@ export const useSkillStore = defineStore('skills', {
     setImportOpen(value: boolean) {
       this.importOpen = value
       if (value) {
-        this.repositoryImportReport = null
+        this.resetGitHubImport()
       }
     },
     setImportField(key: 'source' | 'branch' | 'conflictStrategy', value: string) {
@@ -340,6 +447,89 @@ export const useSkillStore = defineStore('skills', {
           rules: response.data.importedRules,
           skills: response.data.importedSkills,
           presets: response.data.detectedPresets,
+        })
+        notifySuccess(this.actionError)
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.repositoryImportFailed')
+        notifyError(this.actionError)
+      } finally {
+        this.importLoading = false
+      }
+    },
+    resetGitHubImport() {
+      this.repositoryImportReport = null
+      this.githubPreview = null
+      this.githubImportResult = null
+      this.githubSelections = {}
+      this.githubSelectedPath = ''
+      this.githubStep = 'input'
+    },
+    async previewGitHubImport() {
+      this.importLoading = true
+      this.githubImportResult = null
+      try {
+        const response = await previewGitHubRepoImport(this.importDraft.source)
+        if (!response.success || !response.data) {
+          this.actionError = resolveAppError(response.error, 'errors.repositoryImportPreviewFailed')
+          notifyError(this.actionError)
+          return
+        }
+        this.githubPreview = response.data
+        this.githubSelections = buildGitHubSelections(response.data)
+        this.githubSelectedPath = response.data.skills[0]?.sourcePath ?? ''
+        this.githubStep = 'preview'
+        this.actionError = translateKey('feedback.repositoryPreviewDetected', { count: response.data.skills.length })
+        notifySuccess(this.actionError)
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.repositoryImportPreviewFailed')
+        notifyError(this.actionError)
+      } finally {
+        this.importLoading = false
+      }
+    },
+    toggleGitHubSkillSelection(sourcePath: string) {
+      const current = this.githubSelections[sourcePath]
+      if (!current) return
+      current.selected = !current.selected
+    },
+    setGitHubSkillResolution(sourcePath: string, resolution: 'skip' | 'overwrite' | 'rename') {
+      const current = this.githubSelections[sourcePath]
+      if (!current) return
+      current.resolution = resolution
+    },
+    setGitHubSkillRename(sourcePath: string, renamedSkillId: string) {
+      const current = this.githubSelections[sourcePath]
+      if (!current) return
+      current.renamedSkillId = renamedSkillId
+    },
+    setGitHubSelectedPath(sourcePath: string) {
+      this.githubSelectedPath = sourcePath
+    },
+    async applyGitHubImport() {
+      const selections = Object.values(this.githubSelections)
+        .filter((selection) => selection.selected)
+        .map(({ selected: _selected, ...selection }) => selection)
+      if (selections.length === 0) {
+        this.actionError = translateKey('errors.repositorySourceRequired')
+        notifyWarning(this.actionError)
+        return
+      }
+
+      this.importLoading = true
+      try {
+        const response = await importGitHubRepoSkills(this.importDraft.source, selections)
+        if (!response.success || !response.data) {
+          this.actionError = resolveAppError(response.error, 'errors.repositoryImportFailed')
+          notifyError(this.actionError)
+          return
+        }
+        await this.hydrateFromSnapshot()
+        this.githubImportResult = response.data
+        this.githubStep = 'result'
+        this.actionError = translateKey('feedback.repositoryImportCompleted', {
+          rules: 0,
+          skills: response.data.importedSkills.length,
+          presets: 0,
         })
         notifySuccess(this.actionError)
       } catch (error) {

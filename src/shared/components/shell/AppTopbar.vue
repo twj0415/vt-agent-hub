@@ -1,43 +1,25 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { DownOutlined, MinusOutlined, BorderOutlined, CloseOutlined, CheckOutlined } from '@ant-design/icons-vue';
-  import { toolRegistry, type ToolId } from '@/shared/tool-registry';
-  import { useToolContextStore } from '@/shared/stores/tool-context';
-  import { useToolsStore } from '@/shared/stores/tools';
+  import { MinusOutlined, BorderOutlined, CloseOutlined } from '@ant-design/icons-vue';
+  import { isTauriRuntime } from '@/shared/utils/runtime';
   import TopbarSettingsPopover from './TopbarSettingsPopover.vue';
 
   const { t } = useI18n();
-  const workspaceStore = useToolContextStore();
-  const toolsStore = useToolsStore();
-  const appWindow = getCurrentWindow();
+  const appWindow = isTauriRuntime() ? getCurrentWindow() : null;
 
   const appIcon = new URL('../../../assets/icon.ico', import.meta.url).href;
-  const activeTool = computed(() => toolRegistry.find((item) => item.id === workspaceStore.activeToolId) ?? toolRegistry[0]);
-  const selectableTools = computed(() => toolRegistry.filter((item) => item.enabled));
-
-  function selectTool(id: ToolId) {
-    const tool = toolRegistry.find((item) => item.id === id);
-    if (!tool?.enabled) return;
-    workspaceStore.setActiveTool(id);
-    toolsStore.select(id);
-  }
-
-  function onToolMenuClick({ key }: { key: string | number }) {
-    selectTool(Number(key) as ToolId);
-  }
 
   async function minimizeWindow() {
-    await appWindow.minimize();
+    await appWindow?.minimize();
   }
 
   async function toggleMaximizeWindow() {
-    await appWindow.toggleMaximize();
+    await appWindow?.toggleMaximize();
   }
 
   async function closeWindow() {
-    await appWindow.close();
+    await appWindow?.close();
   }
 </script>
 
@@ -58,36 +40,6 @@
     </div>
 
     <div class="flex shrink-0 items-center gap-0.5 pr-1">
-      <a-dropdown placement="bottomRight" trigger="click">
-        <button
-          type="button"
-          class="inline-flex h-7 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 text-[13px] font-medium text-text outline-none transition-[background-color,box-shadow] hover:bg-text/[0.055]"
-        >
-          <img
-            v-if="activeTool?.iconSrc"
-            :src="activeTool.iconSrc"
-            :alt="t(activeTool?.nameKey ?? 'common.tool')"
-            class="h-4 w-4 object-contain"
-          />
-          <span v-else class="text-[10px] font-semibold uppercase tracking-[0.06em]">
-            {{ activeTool?.iconText }}
-          </span>
-          <span class="max-w-[120px] truncate">{{ t(activeTool?.nameKey ?? 'common.tool') }}</span>
-          <DownOutlined class="text-[8px] text-muted" />
-        </button>
-        <template #overlay>
-          <a-menu class="min-w-[180px]" @click="onToolMenuClick">
-            <a-menu-item v-for="tool in selectableTools" :key="tool.id">
-              <span class="flex items-center gap-2">
-                <CheckOutlined v-if="tool.id === activeTool?.id" class="text-accent" />
-                <span v-else class="w-4" />
-                <span>{{ t(tool.nameKey) }}</span>
-              </span>
-            </a-menu-item>
-          </a-menu>
-        </template>
-      </a-dropdown>
-
       <TopbarSettingsPopover />
     </div>
 

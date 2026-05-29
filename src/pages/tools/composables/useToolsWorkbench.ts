@@ -16,17 +16,25 @@ export function useToolsWorkbench() {
   const cards = useToolCards()
 
   function openTool(id: ToolId) {
-    if (!toolsStore.isToolEnabled(id)) return
-    toolsStore.select(id)
-    workspaceStore.setActiveTool(id)
+    if (!selectTool(id)) return
     toolsStore.setDetailOpen(true)
   }
 
-  function manageRules(id: ToolId) {
-    if (!toolsStore.isToolEnabled(id)) return
+  function selectTool(id: ToolId) {
+    if (!toolsStore.isToolEnabled(id)) return false
     toolsStore.select(id)
     workspaceStore.setActiveTool(id)
+    return true
+  }
+
+  function manageRules(id: ToolId) {
+    if (!selectTool(id)) return
     toolsStore.openRuleBinding()
+  }
+
+  function manageSkills(id: ToolId) {
+    if (!selectTool(id)) return
+    toolsStore.openSkillBinding()
   }
 
   onMounted(async () => {
@@ -40,6 +48,7 @@ export function useToolsWorkbench() {
   return {
     t,
     manageRules,
+    manageSkills,
     openTool,
     ruleStore,
     skillStore,

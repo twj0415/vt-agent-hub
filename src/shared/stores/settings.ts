@@ -5,6 +5,7 @@ import { getSettingsSnapshot, resetAppData } from '@/shared/api/tauri'
 import { isTauriRuntime } from '@/shared/utils/runtime'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import { resolveAppError, resolveUnknownError, translateKey } from '@/shared/i18n/translate'
+import { storageKeys } from '@/shared/constants/storage'
 import { isThemePreset, useThemeStore, type ThemePreset } from './theme'
 import { useI18nStore, type LocaleCode } from './i18n'
 
@@ -293,11 +294,14 @@ export const useSettingsStore = defineStore('settings', {
         this.truthSources = response.data.truthSources
         this.snapshotError = ''
 
-        const theme = response.data.items.find((item) => item.name === 'theme')
-        if (theme && isThemePreset(theme.value)) {
-          useThemeStore().setPreset(theme.value)
-        } else if (theme && (theme.value === 'light' || theme.value === 'system')) {
-          useThemeStore().setPreset('apple')
+        const savedTheme = localStorage.getItem(storageKeys.theme)
+        if (!savedTheme) {
+          const theme = response.data.items.find((item) => item.name === 'theme')
+          if (theme && isThemePreset(theme.value)) {
+            useThemeStore().setPreset(theme.value)
+          } else if (theme && (theme.value === 'light' || theme.value === 'system')) {
+            useThemeStore().setPreset('apple')
+          }
         }
       } catch (error) {
         this.snapshotError = resolveUnknownError(error, 'errors.settingsSnapshotFailed')

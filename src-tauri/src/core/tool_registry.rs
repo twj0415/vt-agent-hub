@@ -40,7 +40,7 @@ pub const TOOL_REGISTRY: [ToolRegistryItem; 3] = [
         enabled: true,
         capabilities: ToolCapabilitySet {
             rules: true,
-            presets: false,
+            presets: true,
             credentials: false,
             skill_install: false,
             live_scan: true,

@@ -6,6 +6,7 @@ import {
   exportLibraryDiagnostics,
   getToolDiagnostics,
   getToolsSnapshot,
+  installSkillAsset,
   previewGlobalOutput,
   repairGlobalOutput,
   repairTool,
@@ -14,6 +15,7 @@ import {
   saveToolGlobalRuleBindings,
   saveToolSkillBindings,
   setToolEnabled,
+  uninstallSkillAsset,
   verifyToolCredential,
 } from '@/shared/api/tauri'
 import type {
@@ -395,7 +397,9 @@ export const useToolsStore = defineStore('tools', {
     },
     openSkillBinding() {
       if (!this.activeToolEnabled) return
-      this.skillBindingDraft.selectedNewSkillIds = []
+      this.skillBindingDraft.selectedNewSkillIds = useSkillStore().items
+        .filter((item) => item.toolIds.includes(this.activeId))
+        .map((item) => item.id)
       this.skillBindOpen = true
     },
     async saveToolRuleIdsAndSync(
@@ -487,18 +491,53 @@ export const useToolsStore = defineStore('tools', {
       if (!this.isToolEnabled(toolId)) return 'failed'
       this.skillBindLoading = true
       try {
-        const response = await saveToolSkillBindings(toolId, skillIds)
+        const skillStore = useSkillStore()
+        const nextSkillIds = Array.from(new Set(skillIds))
+        const currentSkillIds = skillStore.items
+          .filter((item) => item.toolIds.includes(toolId))
+          .map((item) => item.id)
+        const addedSkillIds = nextSkillIds.filter((id) => !currentSkillIds.includes(id))
+        const removedSkillIds = currentSkillIds.filter((id) => !nextSkillIds.includes(id))
+
+        const installedSkillIds: number[] = []
+        for (const skillId of addedSkillIds) {
+          const installResponse = await installSkillAsset(toolId, skillId)
+          if (!installResponse.success) {
+            await Promise.allSettled(installedSkillIds.map((id) => uninstallSkillAsset(toolId, id)))
+            this.globalError = installResponse.error?.message ?? translateKey('errors.skillInstallFailed')
+            notifyError(this.globalError)
+            return 'failed'
+          }
+          installedSkillIds.push(skillId)
+        }
+
+        const uninstalledSkillIds: number[] = []
+        for (const skillId of removedSkillIds) {
+          const uninstallResponse = await uninstallSkillAsset(toolId, skillId)
+          if (!uninstallResponse.success) {
+            await Promise.allSettled(installedSkillIds.map((id) => uninstallSkillAsset(toolId, id)))
+            await Promise.allSettled(uninstalledSkillIds.map((id) => installSkillAsset(toolId, id)))
+            this.globalError = uninstallResponse.error?.message ?? translateKey('errors.skillUninstallFailed')
+            notifyError(this.globalError)
+            return 'failed'
+          }
+          uninstalledSkillIds.push(skillId)
+        }
+
+        const response = await saveToolSkillBindings(toolId, nextSkillIds)
         if (!response.success) {
+          await Promise.allSettled(installedSkillIds.map((id) => uninstallSkillAsset(toolId, id)))
+          await Promise.allSettled(uninstalledSkillIds.map((id) => installSkillAsset(toolId, id)))
           this.globalError = response.error?.message ?? translateKey('errors.skillSaveFailed')
           notifyError(this.globalError)
           return 'failed'
         }
 
         if (options.refreshSnapshot !== false) await this.hydrateFromSnapshot()
-        if (options.refreshSkills !== false) await useSkillStore().hydrateFromSnapshot()
+        if (options.refreshSkills !== false) await skillStore.hydrateFromSnapshot()
         if (options.closeBind) this.skillBindOpen = false
         this.globalError = ''
-        if (options.notify) notifySuccess('Skill bindings saved.')
+        if (options.notify) notifySuccess(translateKey('feedback.skillBindingsSaved'))
         return 'saved'
       } catch (error) {
         this.globalError = error instanceof Error ? error.message : translateKey('errors.skillSaveFailed')
@@ -510,10 +549,7 @@ export const useToolsStore = defineStore('tools', {
     },
     async saveSkillBinding() {
       if (!this.activeToolEnabled) return
-      const currentSkillIds = useSkillStore().items
-        .filter((item) => item.toolIds.includes(this.activeId))
-        .map((item) => item.id)
-      const nextSkillIds = Array.from(new Set([...currentSkillIds, ...this.skillBindingDraft.selectedNewSkillIds]))
+      const nextSkillIds = Array.from(new Set(this.skillBindingDraft.selectedNewSkillIds))
 
       await this.saveToolSkillIdsAndSync(this.activeId, nextSkillIds, {
         closeBind: true,

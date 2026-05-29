@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import {
   applyProviderToLiveConfig,
   deleteProvider,
+  detectProviderLiveDrift,
   duplicateProvider,
   importProviderConfig,
   listProviders,
@@ -25,7 +26,7 @@ import {
 import { toolIds, toolRegistry, type ToolId } from '@/shared/tool-registry'
 import { notifyError, notifySuccess, notifyWarning } from '@/shared/utils/notify'
 import { useToolContextStore } from './tool-context'
-import type { ProviderApplyPreview, ProviderApplyResult, ProviderSummary, ProviderToolConfig } from '@/shared/api/client'
+import type { ProviderApplyPreview, ProviderApplyResult, ProviderLiveDrift, ProviderSummary, ProviderToolConfig } from '@/shared/api/client'
 
 type ProviderDraft = {
   id: number | null
@@ -48,10 +49,12 @@ type ProviderDraft = {
 export type ProviderItem = ProviderSummary
 
 export type ProviderCardItem = {
-  id: number
+  id: string
+  providerId: number
   configId: number | null
   name: string
   category: string
+  toolId: ToolId | null
   toolTags: string[]
   toolTitle: string
   model: string
@@ -106,6 +109,7 @@ export const useProvidersStore = defineStore('providers', () => {
   const defaultToolId = computed(() => toolContextStore.activeToolId)
   const items = ref<ProviderItem[]>([])
   const activeId = ref(0)
+  const filterToolId = ref<ToolId>(toolIds.codex)
   const formOpen = ref(false)
   const importOpen = ref(false)
   const applyOpen = ref(false)
@@ -117,6 +121,9 @@ export const useProvidersStore = defineStore('providers', () => {
   const importParts = ref<Record<string, string>>({})
   const applyPreviewResult = ref<ProviderApplyPreview | null>(null)
   const applyResult = ref<ProviderApplyResult | null>(null)
+  const driftByConfigId = ref<Record<number, ProviderLiveDrift>>({})
+  const ignoredDriftConfigIds = ref<number[]>([])
+  const driftChecking = ref(false)
   const actionError = ref('')
 
   const activeToolId = computed(() => toolContextStore.activeToolId)
@@ -127,28 +134,36 @@ export const useProvidersStore = defineStore('providers', () => {
   const modelOptions = computed(() => activeToolSchema.value?.fields.find((field) => field.key === 'model')?.options ?? [])
   const activeItem = computed(() => items.value.find((item) => item.id === activeId.value) ?? null)
   const currentCards = computed<ProviderCardItem[]>(() =>
-    items.value
-      .filter((provider) => firstConfigForTool(provider, activeToolId.value))
-      .map((provider) => {
-        const config = firstConfigForTool(provider, activeToolId.value)
-        const toolTags = provider.configs
-          .map((item) => toolRegistry.find((tool) => tool.id === item.toolId)?.key ?? String(item.toolId))
+    items.value.flatMap((provider) => provider.configs
+      .filter((config) => config.toolId === filterToolId.value)
+      .map((config) => {
+        const tool = toolRegistry.find((item) => item.id === config.toolId)
+        const toolLabel = tool ? translateKey(tool.nameKey) : String(config.toolId)
+
         return {
-          id: provider.id,
-          configId: config?.id ?? null,
+          id: `${provider.id}:${config.id}`,
+          providerId: provider.id,
+          configId: config.id,
           name: provider.name,
           category: provider.category,
-          toolTags,
-          toolTitle: toolTags.join(', '),
-          model: config?.model ?? translateKey('common.empty'),
-          baseUrl: config?.baseUrl ?? translateKey('common.empty'),
-          status: normalizeProviderCheckStatus(config?.lastCheckStatus ?? 'unchecked'),
-          state: entityStateFromCode(config?.state ?? 504),
-          active: Boolean(config?.isActive),
+          toolId: config.toolId as ToolId,
+          toolTags: [tool?.key ?? String(config.toolId)],
+          toolTitle: toolLabel,
+          model: config.model || translateKey('common.empty'),
+          baseUrl: config.baseUrl || translateKey('common.empty'),
+          status: normalizeProviderCheckStatus(config.lastCheckStatus),
+          state: entityStateFromCode(config.state),
+          active: Boolean(config.isActive),
         }
-      }),
+      })),
   )
   const applyPreview = computed(() => applyPreviewResult.value)
+  const activeDrift = computed(() => {
+    const config = currentCards.value.find((item) => item.active)?.configId
+    if (!config || ignoredDriftConfigIds.value.includes(config)) return null
+    const drift = driftByConfigId.value[config]
+    return drift?.hasDrift ? drift : null
+  })
 
   async function hydrate() {
     loading.value = true
@@ -164,6 +179,7 @@ export const useProvidersStore = defineStore('providers', () => {
         ?? items.value.find((item) => item.id === activeId.value)?.id
         ?? items.value[0]?.id
         ?? 0
+      void checkActiveLiveDrift()
     } catch (error) {
       actionError.value = resolveUnknownError(error, 'errors.providerListFailed')
       notifyError(actionError.value)
@@ -179,17 +195,20 @@ export const useProvidersStore = defineStore('providers', () => {
     actionError.value = ''
   }
 
-  function openImport() {
-    importToolId.value = draft.value.toolId || activeToolId.value
+  function openImport(toolId?: number) {
+    const nextToolId = toolId && providerToolOptions.some((item) => item.value === toolId)
+      ? toolId
+      : draft.value.toolId || activeToolId.value
+    importToolId.value = nextToolId as ToolId
     resetImportParts()
     importOpen.value = true
     actionError.value = ''
   }
 
-  function openEdit(id: number) {
+  function openEdit(id: number, configId?: number | null) {
     const provider = items.value.find((item) => item.id === id)
     if (!provider) return
-    const config = firstConfigForTool(provider, activeToolId.value) ?? provider.configs[0] ?? null
+    const config = provider.configs.find((item) => item.id === configId) ?? firstConfigForTool(provider, activeToolId.value) ?? provider.configs[0] ?? null
     const values = schemaDefaults(config?.toolId ?? activeToolId.value)
     draft.value = {
       id: provider.id,
@@ -218,6 +237,11 @@ export const useProvidersStore = defineStore('providers', () => {
 
   function setImportOpen(value: boolean) {
     importOpen.value = value
+  }
+
+  function setFilterToolId(value: ToolId) {
+    filterToolId.value = value
+    void checkActiveLiveDrift()
   }
 
   function setApplyOpen(value: boolean) {
@@ -340,7 +364,8 @@ export const useProvidersStore = defineStore('providers', () => {
       notifyWarning(actionError.value)
       return
     }
-    if (!draft.value.baseUrl.startsWith('http://') && !draft.value.baseUrl.startsWith('https://')) {
+    const allowsDisplayUrl = draft.value.toolId === toolIds.claude && /^(bedrock|vertex):\/\//.test(draft.value.baseUrl)
+    if (!allowsDisplayUrl && !draft.value.baseUrl.startsWith('http://') && !draft.value.baseUrl.startsWith('https://')) {
       actionError.value = translateKey('errors.providerBaseUrlInvalid')
       notifyWarning(actionError.value)
       return
@@ -418,9 +443,11 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
-  async function openApplyPreview(providerId: number) {
+  async function openApplyPreview(providerId: number, configId?: number | null) {
     const provider = items.value.find((item) => item.id === providerId)
-    const config = provider ? firstConfigForTool(provider, activeToolId.value) : null
+    const config = provider
+      ? provider.configs.find((item) => item.id === configId) ?? firstConfigForTool(provider, activeToolId.value)
+      : null
     if (!config) {
       requireConfig(config)
       return
@@ -442,6 +469,80 @@ export const useProvidersStore = defineStore('providers', () => {
     }
   }
 
+  async function checkLiveDrift(configId: number) {
+    driftChecking.value = true
+    try {
+      const response = await detectProviderLiveDrift(configId)
+      if (!response.success || !response.data) {
+        actionError.value = resolveAppError(response.error, 'errors.providerDriftCheckFailed')
+        return null
+      }
+      driftByConfigId.value = {
+        ...driftByConfigId.value,
+        [configId]: response.data,
+      }
+      return response.data
+    } catch (error) {
+      actionError.value = resolveUnknownError(error, 'errors.providerDriftCheckFailed')
+      return null
+    } finally {
+      driftChecking.value = false
+    }
+  }
+
+  async function checkActiveLiveDrift() {
+    const configId = currentCards.value.find((item) => item.active)?.configId
+    if (!configId) return null
+    return checkLiveDrift(configId)
+  }
+
+  function ignoreActiveDrift() {
+    const configId = activeDrift.value?.configId
+    if (!configId) return
+    ignoredDriftConfigIds.value = Array.from(new Set([...ignoredDriftConfigIds.value, configId]))
+    notifySuccess(translateKey('feedback.providerDriftIgnored'))
+  }
+
+  function showActiveDriftDiff() {
+    const drift = activeDrift.value
+    if (!drift) return
+    applyPreviewResult.value = {
+      toolId: drift.toolId,
+      providerId: drift.providerId,
+      configId: drift.configId,
+      providerName: drift.providerName,
+      targetPath: drift.targetPath,
+      targetExists: drift.targetExists,
+      backupRequired: drift.files.some((file) => file.backupRequired),
+      beforeContent: drift.files[0]?.beforeContent ?? '',
+      afterContent: drift.files[0]?.afterContent ?? '',
+      diff: drift.files[0]?.diff ?? '',
+      files: drift.files,
+      warning: drift.warning,
+    }
+    applyOpen.value = true
+  }
+
+  async function applyActiveDriftProvider() {
+    const drift = activeDrift.value
+    if (!drift) return
+    applyPreviewResult.value = {
+      toolId: drift.toolId,
+      providerId: drift.providerId,
+      configId: drift.configId,
+      providerName: drift.providerName,
+      targetPath: drift.targetPath,
+      targetExists: drift.targetExists,
+      backupRequired: drift.files.some((file) => file.backupRequired),
+      beforeContent: drift.files[0]?.beforeContent ?? '',
+      afterContent: drift.files[0]?.afterContent ?? '',
+      diff: drift.files[0]?.diff ?? '',
+      files: drift.files,
+      warning: drift.warning,
+    }
+    await applyToLiveConfig(true)
+  }
+
   async function applyToLiveConfig(confirmRisk = true) {
     const configId = applyPreviewResult.value?.configId
     if (!configId) return
@@ -453,6 +554,21 @@ export const useProvidersStore = defineStore('providers', () => {
         return
       }
       applyResult.value = response.data
+      driftByConfigId.value = {
+        ...driftByConfigId.value,
+        [configId]: {
+          toolId: response.data.toolId,
+          providerId: response.data.providerId,
+          configId: response.data.configId,
+          providerName: applyPreviewResult.value?.providerName ?? '',
+          hasDrift: false,
+          targetPath: response.data.targetPath,
+          targetExists: true,
+          files: [],
+          warning: undefined,
+        },
+      }
+      ignoredDriftConfigIds.value = ignoredDriftConfigIds.value.filter((id) => id !== configId)
       await hydrate()
       applyOpen.value = false
       notifySuccess(translateKey('feedback.providerApplied'))
@@ -469,18 +585,26 @@ export const useProvidersStore = defineStore('providers', () => {
     activeToolId,
     activeToolSchema,
     applyOpen,
+    activeDrift,
+    applyActiveDriftProvider,
     applyPreview,
     applyPreviewResult,
     applyResult,
     applyToLiveConfig,
     categoryOptions,
+    checkActiveLiveDrift,
+    checkLiveDrift,
 
     currentCards,
     deleteItem,
     draft,
+    driftByConfigId,
+    driftChecking,
     duplicateItem,
+    filterToolId,
     formOpen,
     hydrate,
+    ignoreActiveDrift,
     importDraftFromPaste,
     importOpen,
     importing,
@@ -500,9 +624,11 @@ export const useProvidersStore = defineStore('providers', () => {
     setApplyOpen,
     setDraftField,
     setDraftTool,
+    setFilterToolId,
     setFormOpen,
     setImportOpen,
     setImportPart,
     setImportTool,
+    showActiveDriftDiff,
   }
 })

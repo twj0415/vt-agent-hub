@@ -4,13 +4,17 @@
   import { useI18n } from 'vue-i18n';
   import CardIconButton from '@/shared/components/feedback/CardIconButton.vue';
   import CardMoreMenu from '@/shared/components/feedback/CardMoreMenu.vue';
+  import type { ToolId } from '@/shared/tool-registry';
   import type { CardMoreMenuItem } from '@/shared/types/ui';
 
   const props = defineProps<{
     item: {
-      id: number;
+      id: string;
+      providerId: number;
+      configId: number | null;
       name: string;
       categoryLabel: string;
+      toolId: ToolId | null;
       toolTags: string[];
       toolTitle: string;
       model: string;
@@ -24,9 +28,9 @@
   }>();
 
   const emit = defineEmits<{
-    apply: [id: number];
-    edit: [id: number];
-    more: [payload: { key: string; id: number }];
+    apply: [payload: { providerId: number; configId: number | null }];
+    edit: [payload: { providerId: number; configId: number | null }];
+    more: [payload: { key: string; providerId: number }];
   }>();
 
   const { t } = useI18n();
@@ -38,7 +42,7 @@
   <article
     class="provider-row group relative grid cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-fast ease-standard md:grid-cols-[40px_minmax(0,1fr)_auto] md:items-center"
     :class="item.active ? 'bg-accent/[0.055]' : 'hover:bg-text/[0.04]'"
-    @click="emit('edit', item.id)"
+    @click="emit('edit', { providerId: item.providerId, configId: item.configId })"
   >
     <span
       v-if="item.active"
@@ -100,14 +104,14 @@
           type="primary"
           size="small"
           :disabled="busy"
-          @click="emit('apply', item.id)"
+          @click="emit('apply', { providerId: item.providerId, configId: item.configId })"
         >
           {{ t('common.apply') }}
         </a-button>
-        <CardIconButton :title="t('catalog.action.edit')" :disabled="busy" @click="emit('edit', item.id)">
+        <CardIconButton :title="t('catalog.action.edit')" :disabled="busy" @click="emit('edit', { providerId: item.providerId, configId: item.configId })">
           <EditOutlined />
         </CardIconButton>
-        <CardMoreMenu :items="moreItems" @select="emit('more', { key: $event, id: item.id })" />
+        <CardMoreMenu :items="moreItems" @select="emit('more', { key: $event, providerId: item.providerId })" />
       </div>
     </div>
   </article>

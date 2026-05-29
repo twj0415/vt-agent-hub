@@ -55,6 +55,7 @@ export function useSkillCards() {
         versionLabel: `v${item.versionNo}`,
         summaryText: text(item.summary, emptyText),
         toolTags: previewTags(tools),
+        toolCount: item.toolIds.length,
         toolTitle: joined(tools, emptyText),
         statusLabel: statusLabel(item),
         statusTone: statusTone(item),

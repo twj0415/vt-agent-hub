@@ -71,9 +71,9 @@ export const toolRegistry: ToolRegistryItem[] = [
     iconSrc: claudeIcon,
     capabilities: {
       rules: true,
-      presets: false,
+      presets: true,
       credentials: false,
-      skillInstall: false,
+      skillInstall: true,
       liveScan: true,
       agentsOutput: true,
     },
@@ -89,7 +89,7 @@ export const toolRegistry: ToolRegistryItem[] = [
     iconSrc: cursorIcon,
     capabilities: {
       rules: true,
-      presets: false,
+      presets: true,
       credentials: false,
       skillInstall: false,
       liveScan: true,

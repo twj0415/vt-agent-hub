@@ -9,6 +9,7 @@
     bodyStyle?: Record<string, string>;
     okButtonProps?: Record<string, unknown>;
     wrapClassName?: string;
+    hideFooter?: boolean;
   }>();
 
   const emit = defineEmits<{
@@ -27,6 +28,7 @@
     :ok-text="okText"
     :cancel-text="cancelText"
     :ok-button-props="okButtonProps"
+    v-bind="hideFooter ? { footer: null } : {}"
     :confirm-loading="loading"
     :width="width"
     :body-style="bodyStyle ?? { maxHeight: '72vh', overflowY: 'auto', padding: '22px 24px' }"
@@ -36,6 +38,15 @@
     <a-spin :spinning="loading">
       <slot />
     </a-spin>
+
+    <template v-if="!hideFooter" #footer>
+      <div class="vt-modal-footer-actions">
+        <a-button @click="emit('close')">{{ cancelText }}</a-button>
+        <a-button type="primary" :loading="loading" v-bind="okButtonProps ?? {}" @click="emit('ok')">
+          {{ okText }}
+        </a-button>
+      </div>
+    </template>
   </a-modal>
 </template>
 
@@ -62,5 +73,11 @@
   border-top: 1px solid rgb(var(--vt-color-line) / 0.35);
   padding-top: 14px;
   margin-top: 0;
+}
+
+.vt-modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

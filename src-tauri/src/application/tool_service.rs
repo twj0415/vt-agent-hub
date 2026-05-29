@@ -4,7 +4,8 @@ use crate::adapters::cursor::CursorAdapter;
 use std::path::PathBuf;
 
 use crate::adapters::tool_adapter::{
-    PresetConfigBuildInput, ProjectOutputBuildInput, ToolActionResult, ToolAdapter, ToolDiagnostics,
+    PresetConfigBuildInput, ProjectOutputBuildInput, ProviderConfigImport, ToolActionResult,
+    ToolAdapter, ToolDiagnostics,
 };
 use crate::core::tool_registry::{
     get_tool, ToolCapabilitySet, CLAUDE_TOOL_ID, CODEX_TOOL_ID, CURSOR_TOOL_ID,
@@ -161,4 +162,17 @@ impl ToolService {
             |adapter| adapter.import_live_preset(content),
         )?
     }
+
+    pub fn import_provider_config(
+        &self,
+        tool_id: i32,
+        input: &crate::dto::ProviderImportInputDto,
+    ) -> Result<ProviderConfigImport, String> {
+        self.with_adapter(
+            tool_id,
+            "Provider config import adapter is not implemented for tool id",
+            |adapter| adapter.import_provider_config(input),
+        )?
+    }
 }
+

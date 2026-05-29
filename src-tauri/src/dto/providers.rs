@@ -138,3 +138,17 @@ pub struct ProviderApplyResultDto {
     pub backup_paths: Vec<String>,
     pub message: String,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderLiveDriftDto {
+    pub tool_id: i32,
+    pub provider_id: i32,
+    pub config_id: i32,
+    pub provider_name: String,
+    pub has_drift: bool,
+    pub target_path: String,
+    pub target_exists: bool,
+    pub files: Vec<ProviderApplyFilePreviewDto>,
+    pub warning: Option<String>,
+}

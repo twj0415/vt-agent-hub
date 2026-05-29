@@ -12,7 +12,7 @@ export function useSkillsWorkbench() {
   const cards = useSkillCards()
 
   const categoryOptions = computed(() => skillCategoryOptions.map((item) => ({ value: item.value, label: t(item.labelKey) })))
-  const skillListBusy = computed(() => skillStore.importLoading)
+  const skillListBusy = computed(() => skillStore.importLoading || skillStore.bindLoading)
 
   onMounted(() => {
     if (route.query.action === 'create') {

@@ -1,6 +1,7 @@
 pub mod app_container;
 pub mod app_init_service;
 pub mod backup_service;
+pub mod first_run_import_service;
 pub mod global_output_service;
 pub mod library_diagnostics_service;
 pub mod operation_service;
@@ -17,6 +18,8 @@ pub mod write_service;
 
 #[cfg(test)]
 mod app_init_service_test;
+#[cfg(test)]
+mod first_run_import_service_test;
 #[cfg(test)]
 mod global_output_service_test;
 #[cfg(test)]

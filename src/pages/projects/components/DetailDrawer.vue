@@ -12,6 +12,7 @@
   const { confirmAction } = useConfirm();
   const bottomTab = ref<'rules' | 'preview'>('rules');
   const activeToolId = computed(() => workspaceStore.activeToolId as 101 | 102 | 103);
+  const bindingTargetToolId = computed(() => projectsStore.bindingDraft.targetToolId);
 
   const loading = computed(() => projectsStore.listLoading || projectsStore.scanLoading || projectsStore.bindLoading || projectsStore.deleteLoading);
   const previewLoading = computed(() => projectsStore.previewLoading || projectsStore.scanLoading);
@@ -67,7 +68,7 @@
       danger: true,
       okText: t('pages.projects.binding.unbindAndApply'),
       content: t('pages.projects.binding.unbindConfirmContent', { name: rule.name }),
-      onOk: () => projectsStore.unbindRule(rule.id, activeToolId.value),
+      onOk: () => projectsStore.unbindRule(rule.id, bindingTargetToolId.value),
     });
   }
 </script>

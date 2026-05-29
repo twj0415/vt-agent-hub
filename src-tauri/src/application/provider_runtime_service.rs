@@ -16,10 +16,11 @@ use crate::application::service_context::ServiceContext;
 use crate::application::tool_service::ToolService;
 use crate::core::product::PRODUCT_NAME;
 use crate::core::routes::ROUTE_PRESETS;
-use crate::core::tool_registry::CODEX_TOOL_ID;
+use crate::core::tool_registry::{CLAUDE_TOOL_ID, CODEX_TOOL_ID};
 use crate::dto::{
     ProviderApplyFilePreviewDto, ProviderApplyPreviewDto, ProviderApplyResultDto,
-    ProviderImportDraftDto, ProviderImportInputDto, ProviderSaveInputDto, ProviderSummaryDto,
+    ProviderImportDraftDto, ProviderImportInputDto, ProviderLiveDriftDto, ProviderSaveInputDto,
+    ProviderSummaryDto,
 };
 use crate::infrastructure::credential_store::CredentialStore;
 use crate::infrastructure::database::Database;
@@ -68,38 +69,25 @@ impl ProviderRuntimeService {
         &self,
         input: ProviderImportInputDto,
     ) -> Result<ProviderImportDraftDto, String> {
-        if input.tool_id != CODEX_TOOL_ID {
-            return Err(format!(
-                "Tool {} provider paste import is not supported yet.",
-                input.tool_id
-            ));
-        }
-        if input.parts.is_empty() {
-            return Err("Provider import requires at least one pasted config part.".to_string());
-        }
-
-        let config_content = Self::required_import_part(&input, "config")?;
-        let parsed = Self::parse_codex_config(config_content)?;
-        Self::validate_codex_values(&parsed.model, &parsed.reasoning, &parsed.base_url)?;
-
-        let credential_ref = Self::generate_credential_ref(&parsed.provider_name, CODEX_TOOL_ID);
-        let credential_token = Self::optional_import_part(&input, "auth")
-            .map(Self::read_auth_token_from_content)
-            .transpose()?
-            .filter(|token| !token.trim().is_empty());
-        let has_credential = credential_token.is_some();
+        let parsed = self.tool_service.import_provider_config(input.tool_id, &input)?;
         let detected_parts = input
             .parts
             .iter()
             .filter(|part| !part.content.trim().is_empty())
             .map(|part| part.role.trim().to_string())
             .collect::<Vec<_>>();
+        let credential_ref = Self::generate_credential_ref(&parsed.provider_name, input.tool_id);
+        let has_credential = parsed
+            .credential_token
+            .as_ref()
+            .map(|token| !token.trim().is_empty())
+            .unwrap_or(false);
 
         let db = self.db.lock().expect("db poisoned");
         OperationService::record_simple(
             &db,
             None,
-            Some(CODEX_TOOL_ID),
+            Some(input.tool_id),
             None,
             "operation",
             "Provider config import",
@@ -117,19 +105,19 @@ impl ProviderRuntimeService {
         Ok(ProviderImportDraftDto {
             source_kind: "paste".to_string(),
             detected_parts,
-            tool_id: CODEX_TOOL_ID,
+            tool_id: input.tool_id,
             schema_version: 1,
             name: parsed.provider_name.clone(),
-            category: "official".to_string(),
+            category: parsed.category,
             website: String::new(),
-            note: "Imported from pasted Codex config.".to_string(),
-            display_name: parsed.provider_name,
+            note: "Imported from pasted provider config.".to_string(),
+            display_name: parsed.display_name,
             model: parsed.model,
             reasoning: parsed.reasoning,
             base_url: parsed.base_url,
             credential_ref,
             has_credential,
-            credential_token,
+            credential_token: parsed.credential_token,
             config_json: parsed.config_json,
         })
     }
@@ -197,7 +185,7 @@ impl ProviderRuntimeService {
         )?;
 
         let provider = repo.find_provider(provider_id)?;
-        let configs = repo.list(Some(CODEX_TOOL_ID))?;
+        let configs = repo.list(None)?;
         let matched = configs
             .into_iter()
             .find(|item| item.provider.id == provider_id)
@@ -245,63 +233,133 @@ impl ProviderRuntimeService {
     }
 
     pub fn preview_apply(&self, config_id: i32) -> Result<ProviderApplyPreviewDto, String> {
+        let preview = self.build_apply_preview(config_id, true)?;
+        let db = self.db.lock().expect("db poisoned");
+        OperationService::record_simple(
+            &db,
+            None,
+            Some(preview.tool_id),
+            None,
+            "operation",
+            "Provider apply preview",
+            "provider-preview",
+            &format!("Previewed provider '{}' against live config.", preview.provider_name),
+            "success",
+            crate::core::status_codes::HEALTH_NORMAL,
+            Some(&preview.target_path),
+            ROUTE_PRESETS,
+        )?;
+        Ok(preview)
+    }
+
+    pub fn detect_live_drift(&self, config_id: i32) -> Result<ProviderLiveDriftDto, String> {
+        let preview = self.build_apply_preview(config_id, false)?;
+        let has_drift = preview.files.iter().any(|file| {
+            file.label != "auth.json"
+                && normalize_live_content(&file.before_content)
+                    != normalize_live_content(&file.after_content)
+        });
+
+        Ok(ProviderLiveDriftDto {
+            tool_id: preview.tool_id,
+            provider_id: preview.provider_id,
+            config_id: preview.config_id,
+            provider_name: preview.provider_name,
+            has_drift,
+            target_path: preview.target_path,
+            target_exists: preview.target_exists,
+            files: preview.files,
+            warning: preview.warning,
+        })
+    }
+
+    fn build_apply_preview(
+        &self,
+        config_id: i32,
+        require_credentials: bool,
+    ) -> Result<ProviderApplyPreviewDto, String> {
         let db = self.db.lock().expect("db poisoned");
         let repo = ProviderRepo::new(&db);
         let config = repo.find_config(config_id)?;
         let provider = repo.find_provider(config.provider_id)?;
         Self::ensure_supported_config(&config)?;
 
-        let target_path = self.tool_service.preset_config_path(config.tool_id)?;
-        let before_content = Self::read_config(&target_path)?;
-        let after_content = self.tool_service.render_preset_config(
-            config.tool_id,
-            &Self::preset_config_input(&provider, &config),
-            &before_content,
-        )?;
+        let (target_path, before_content, after_content, files, warning) = match config.tool_id {
+            CODEX_TOOL_ID => {
+                let target_path = self.tool_service.preset_config_path(config.tool_id)?;
+                let before_content = Self::read_config(&target_path)?;
+                let after_content = self.tool_service.render_preset_config(
+                    config.tool_id,
+                    &Self::preset_config_input(&provider, &config),
+                    &before_content,
+                )?;
 
-        let mut files = vec![ProviderApplyFilePreviewDto {
-            label: "config.toml".to_string(),
-            target_path: target_path.display().to_string(),
-            target_exists: target_path.exists(),
-            backup_required: target_path.exists(),
-            before_content: before_content.clone(),
-            after_content: after_content.clone(),
-            diff: Self::build_diff("config.toml", &before_content, &after_content),
-        }];
+                let mut files = vec![ProviderApplyFilePreviewDto {
+                    label: "config.toml".to_string(),
+                    target_path: target_path.display().to_string(),
+                    target_exists: target_path.exists(),
+                    backup_required: target_path.exists(),
+                    before_content: before_content.clone(),
+                    after_content: after_content.clone(),
+                    diff: Self::build_diff("config.toml", &before_content, &after_content),
+                }];
 
-        if Self::requires_auth(&config) {
-            let _ = Self::required_provider_token(&config)?;
-            let auth_path = Self::auth_path_for_config(&target_path)?;
-            let auth_before = Self::read_auth_preview(&auth_path)?;
-            let auth_after = Self::render_auth_json(CREDENTIAL_MASK)?;
-            files.push(ProviderApplyFilePreviewDto {
-                label: "auth.json".to_string(),
-                target_path: auth_path.display().to_string(),
-                target_exists: auth_path.exists(),
-                backup_required: auth_path.exists(),
-                before_content: auth_before.clone(),
-                after_content: auth_after.clone(),
-                diff: Self::build_diff("auth.json", &auth_before, &auth_after),
-            });
-        }
+                if Self::requires_auth(&config) {
+                    if require_credentials {
+                        let _ = Self::required_provider_token(&config)?;
+                    }
+                    let auth_path = Self::auth_path_for_config(&target_path)?;
+                    let auth_before = Self::read_auth_preview(&auth_path)?;
+                    let auth_after = Self::render_auth_json(CREDENTIAL_MASK)?;
+                    files.push(ProviderApplyFilePreviewDto {
+                        label: "auth.json".to_string(),
+                        target_path: auth_path.display().to_string(),
+                        target_exists: auth_path.exists(),
+                        backup_required: auth_path.exists(),
+                        before_content: auth_before.clone(),
+                        after_content: auth_after.clone(),
+                        diff: Self::build_diff("auth.json", &auth_before, &auth_after),
+                    });
+                }
 
-        OperationService::record_simple(
-            &db,
-            None,
-            Some(config.tool_id),
-            None,
-            "operation",
-            "Provider apply preview",
-            "provider-preview",
-            &format!(
-                "Previewed provider '{}' against Codex config.",
-                provider.name
-            ),
-            "success",
-            crate::core::status_codes::HEALTH_NORMAL,
-            Some(&target_path.display().to_string()),
-            ROUTE_PRESETS,
-        )?;
+                (
+                    target_path,
+                    before_content,
+                    after_content,
+                    files,
+                    format!("Applying writes {PRODUCT_NAME} managed provider settings into config.toml and writes auth.json for the provider credential."),
+                )
+            }
+            CLAUDE_TOOL_ID => {
+                let target_path = Self::claude_settings_path();
+                let raw_before = Self::read_config(&target_path)?;
+                let apply_input = Self::preset_config_input(&provider, &config);
+                let after_content = Self::render_claude_settings(
+                    &raw_before,
+                    &apply_input,
+                )?;
+                let before_content = Self::read_claude_preview(&target_path)?;
+                let after_preview = Self::mask_claude_preview(&after_content)?;
+                let files = vec![ProviderApplyFilePreviewDto {
+                    label: "settings.json".to_string(),
+                    target_path: target_path.display().to_string(),
+                    target_exists: target_path.exists(),
+                    backup_required: target_path.exists(),
+                    before_content: before_content.clone(),
+                    after_content: after_preview.clone(),
+                    diff: Self::build_diff("settings.json", &before_content, &after_preview),
+                }];
+
+                (
+                    target_path,
+                    before_content,
+                    after_preview,
+                    files,
+                    "Applying writes Claude provider settings into settings.json env while preserving unrelated settings.".to_string(),
+                )
+            }
+            _ => unreachable!("unsupported provider config passed validation"),
+        };
 
         Ok(ProviderApplyPreviewDto {
             tool_id: config.tool_id,
@@ -313,11 +371,9 @@ impl ProviderRuntimeService {
             backup_required: files.iter().any(|file| file.backup_required),
             before_content: before_content.clone(),
             after_content: after_content.clone(),
-            diff: Self::build_diff("config.toml", &before_content, &after_content),
+            diff: Self::build_diff("live config", &before_content, &after_content),
             files,
-            warning: Some(format!(
-                "Applying writes {PRODUCT_NAME} managed provider settings into config.toml and writes auth.json for the provider credential."
-            )),
+            warning: Some(warning),
         })
     }
 
@@ -337,6 +393,7 @@ impl ProviderRuntimeService {
         let db = self.db.lock().expect("db poisoned");
         let repo = ProviderRepo::new(&db);
         let config = repo.find_config(config_id)?;
+        let provider = repo.find_provider(config.provider_id)?;
         let mut backup_paths = Vec::new();
 
         for file in &preview.files {
@@ -348,14 +405,29 @@ impl ProviderRuntimeService {
             }
         }
 
-        let config_path = PathBuf::from(&preview.target_path);
-        Self::write_text(&config_path, &preview.after_content)?;
+        match config.tool_id {
+            CODEX_TOOL_ID => {
+                let config_path = PathBuf::from(&preview.target_path);
+                Self::write_text(&config_path, &preview.after_content)?;
 
-        if Self::requires_auth(&config) {
-            let token = Self::required_provider_token(&config)?;
-            let auth_path = Self::auth_path_for_config(&config_path)?;
-            let auth_content = Self::render_auth_json(&token)?;
-            Self::write_text(&auth_path, &auth_content)?;
+                if Self::requires_auth(&config) {
+                    let token = Self::required_provider_token(&config)?;
+                    let auth_path = Self::auth_path_for_config(&config_path)?;
+                    let auth_content = Self::render_auth_json(&token)?;
+                    Self::write_text(&auth_path, &auth_content)?;
+                }
+            }
+            CLAUDE_TOOL_ID => {
+                let target_path = Self::claude_settings_path();
+                let before_content = Self::read_config(&target_path)?;
+                let apply_input = Self::preset_config_input(&provider, &config);
+                let after_content = Self::render_claude_settings(
+                    &before_content,
+                    &apply_input,
+                )?;
+                Self::write_text(&target_path, &after_content)?;
+            }
+            _ => unreachable!("unsupported provider config passed validation"),
         }
 
         repo.activate_config(preview.tool_id, preview.config_id)?;
@@ -369,7 +441,7 @@ impl ProviderRuntimeService {
             "Provider apply",
             "provider-apply",
             &format!(
-                "Applied provider '{}' to Codex config.toml and auth.json.",
+                "Applied provider '{}' to live config.",
                 preview.provider_name
             ),
             "success",
@@ -391,7 +463,11 @@ impl ProviderRuntimeService {
                 .map(|file| file.target_path.clone())
                 .collect(),
             backup_paths,
-            message: "Provider applied to Codex config.toml and auth.json.".to_string(),
+            message: "Provider applied to live config.".to_string(),
         })
     }
+}
+
+fn normalize_live_content(value: &str) -> &str {
+    value.trim_start_matches('\u{feff}').trim_end()
 }

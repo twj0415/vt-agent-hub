@@ -6,6 +6,7 @@ import RepositoryImportModal from '@/features/imports/RepositoryImportModal.vue'
 import SkillFormModal from '@/features/skills/SkillFormModal.vue'
 import DetailDrawer from './components/DetailDrawer.vue'
 import SkillCard from './components/SkillCard.vue'
+import SkillToolBindModal from './components/SkillToolBindModal.vue'
 import { useSkillsWorkbench } from './composables/useSkillsWorkbench'
 
 const { categoryOptions, skillCards, skillListBusy, skillStore, t } = useSkillsWorkbench()
@@ -42,6 +43,7 @@ const { categoryOptions, skillCards, skillListBusy, skillStore, t } = useSkillsW
   </div>
 
   <DetailDrawer />
+  <SkillToolBindModal />
 
   <SkillFormModal
     :open="skillStore.formOpen"
@@ -57,9 +59,18 @@ const { categoryOptions, skillCards, skillListBusy, skillStore, t } = useSkillsW
     :draft="skillStore.importDraft"
     :loading="skillStore.importLoading"
     :report="skillStore.repositoryImportReport"
+    :github-preview="skillStore.githubPreview"
+    :github-import-result="skillStore.githubImportResult"
+    :github-selections="skillStore.githubSelections"
+    :github-selected-path="skillStore.githubSelectedPath"
+    :github-step="skillStore.githubStep"
     @close="skillStore.setImportOpen(false)"
-    @preview="skillStore.previewRepositoryImport()"
-    @apply="skillStore.applyImport()"
+    @preview="skillStore.previewGitHubImport()"
+    @apply="skillStore.applyGitHubImport()"
     @field="skillStore.setImportField($event.key, $event.value)"
+    @toggle-github-skill="skillStore.toggleGitHubSkillSelection($event)"
+    @github-resolution="skillStore.setGitHubSkillResolution($event.sourcePath, $event.resolution)"
+    @github-rename="skillStore.setGitHubSkillRename($event.sourcePath, $event.renamedSkillId)"
+    @github-selected-path="skillStore.setGitHubSelectedPath($event)"
   />
 </template>

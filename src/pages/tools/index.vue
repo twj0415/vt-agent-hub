@@ -11,17 +11,21 @@
   import ToolCard from './components/ToolCard.vue';
   import { useToolsWorkbench } from './composables/useToolsWorkbench';
 
-  const { t, manageRules, openTool, toolCards, toolsStore } = useToolsWorkbench();
+  const { t, manageRules, manageSkills, openTool, toolCards, toolsStore } = useToolsWorkbench();
 
-  const toolListBusy = computed(() => toolsStore.bindLoading);
+  const toolListBusy = computed(() => toolsStore.bindLoading || toolsStore.skillBindLoading);
 
   function handleToolMore(key: string, id: ToolId) {
     if (key === 'rules') manageRules(id);
+    if (key === 'skills') manageSkills(id);
   }
 
-  function toolMoreItems(item: { canManageRules: boolean }): CardMoreMenuItem[] {
+  function toolMoreItems(item: { canManageRules: boolean; canManageSkills: boolean }): CardMoreMenuItem[] {
     const busy = toolListBusy.value;
-    return [{ key: 'rules', label: t('common.bind'), icon: ToolOutlined, disabled: busy || !item.canManageRules }];
+    return [
+      { key: 'rules', label: t('pages.tools.actions.bindRules'), icon: ToolOutlined, disabled: busy || !item.canManageRules },
+      { key: 'skills', label: t('pages.tools.actions.bindSkills'), icon: ToolOutlined, disabled: busy || !item.canManageSkills },
+    ];
   }
 </script>
 

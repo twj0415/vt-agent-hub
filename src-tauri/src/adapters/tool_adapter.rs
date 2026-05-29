@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use crate::domain::tool::Tool;
+use crate::dto::ProviderImportInputDto;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolDiagnostics {
@@ -51,6 +52,19 @@ pub struct PresetConfigBuildInput {
     pub model: String,
     pub reasoning: String,
     pub base_url: String,
+    pub credential_token: Option<String>,
+    pub config_json: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProviderConfigImport {
+    pub provider_name: String,
+    pub category: String,
+    pub display_name: String,
+    pub model: String,
+    pub reasoning: String,
+    pub base_url: String,
+    pub credential_token: Option<String>,
     pub config_json: serde_json::Value,
 }
 
@@ -195,6 +209,12 @@ pub trait ToolAdapter {
     fn import_live_preset(&self, _content: &str) -> Result<PresetConfigBuildInput, String> {
         Err(format!(
             "{} does not support live preset import.",
+            self.tool().key
+        ))
+    }
+    fn import_provider_config(&self, _input: &ProviderImportInputDto) -> Result<ProviderConfigImport, String> {
+        Err(format!(
+            "{} does not support provider config import.",
             self.tool().key
         ))
     }

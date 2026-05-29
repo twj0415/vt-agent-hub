@@ -6,6 +6,7 @@ import VTModal from '@/shared/components/feedback/VTModal.vue'
 import SchemaForm from '@/shared/components/forms/SchemaForm.vue'
 import { providerToolOptions } from '@/shared/providers'
 import { useProvidersStore } from '@/shared/stores/providers'
+import { toolIds } from '@/shared/tool-registry'
 import type { FormField } from '@/shared/types/ui'
 
 const { t } = useI18n()
@@ -47,7 +48,8 @@ const formRules = computed<Record<string, Rule[]>>(() => ({
     {
       validator: async (_rule, value) => {
         const input = String(value ?? '')
-        if (input.startsWith('http://') || input.startsWith('https://')) return
+        const allowsDisplayUrl = providerStore.draft.toolId === toolIds.claude && /^(bedrock|vertex):\/\//.test(input)
+        if (allowsDisplayUrl || input.startsWith('http://') || input.startsWith('https://')) return
         throw new Error(t('errors.providerBaseUrlInvalid'))
       },
       trigger: ['blur', 'change'],

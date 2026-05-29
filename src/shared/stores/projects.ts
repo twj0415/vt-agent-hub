@@ -32,6 +32,7 @@ import {
   type ProjectItem,
   type ProjectType,
   type RuleBindingSelection,
+  type RuleBindingTargetToolId,
 } from './projects-model'
 
 export function localizeProjectMessage(message: string) {
@@ -279,8 +280,12 @@ export const useProjectsStore = defineStore('projects', {
         .filter((item) => item.itemType === 'rule')
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((item) => item.assetId) ?? []
+      this.bindingDraft.targetToolId = toolIds.codex
       this.ruleSearch = ''
       this.bindOpen = true
+    },
+    setBindingTargetToolId(toolId: RuleBindingTargetToolId) {
+      this.bindingDraft.targetToolId = toolId
     },
     async syncBindingsToProjectFile(projectId: number, toolId: number) {
       const scanResponse = await scanProjectOutput(projectId, toolId)
@@ -382,11 +387,12 @@ export const useProjectsStore = defineStore('projects', {
         this.bindLoading = false
       }
     },
-    async applyRuleBinding(activeToolId: ToolId = toolIds.codex) {
+    async applyRuleBinding(activeToolId?: ToolId) {
       const current = this.activeItem
       if (!current) return
 
-      await this.saveProjectRuleIdsAndSync(current.id, this.bindingDraft.selectedRuleIds, activeToolId, {
+      const targetToolId = activeToolId ?? this.bindingDraft.targetToolId
+      await this.saveProjectRuleIdsAndSync(current.id, this.bindingDraft.selectedRuleIds, targetToolId, {
         closeBind: true,
         notify: true,
         refreshRules: true,

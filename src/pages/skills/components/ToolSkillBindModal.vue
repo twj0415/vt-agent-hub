@@ -8,7 +8,7 @@
 
   const { t } = useI18n();
   const toolsStore = useToolsStore();
-  const { availableSkills, categoryLabel, skillDescription } = useToolSkillBindings();
+  const { bindableSkills, categoryLabel, skillDescription } = useToolSkillBindings();
   const loading = computed(() => toolsStore.skillBindLoading);
   const disabled = computed(() => !toolsStore.activeToolEnabled);
 </script>
@@ -22,13 +22,13 @@
     :cancel-text="t('common.close')"
     :body-style="{ maxHeight: '72vh', overflow: 'hidden', padding: '18px 20px' }"
     :loading="loading"
-    :ok-button-props="{ disabled: disabled || !toolsStore.selectedSkillCount }"
+    :ok-button-props="{ disabled }"
     @ok="toolsStore.saveSkillBinding()"
     @close="toolsStore.setSkillBindOpen(false)"
   >
-    <SelectableList :items="availableSkills" :empty-text="t('common.emptyData')">
+    <SelectableList :items="bindableSkills" :empty-text="t('common.emptyData')">
       <button
-        v-for="skill in availableSkills"
+        v-for="skill in bindableSkills"
         :key="skill.id"
         type="button"
         class="flex w-full items-start gap-3 border-b border-line/80 px-4 py-3 text-left transition last:border-b-0 hover:bg-accent/5"

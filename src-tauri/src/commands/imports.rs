@@ -2,7 +2,10 @@ use crate::application::app_container::AppContainer;
 use crate::application::repository_import_service::RepositoryImportService;
 use crate::commands::history_log::{record_command_failure, CommandFailure};
 use crate::core::routes::ROUTE_RULES;
-use crate::dto::{AppResponse, RepositoryImportReportDto};
+use crate::dto::{
+    AppResponse, GitHubRepoImportResultDto, GitHubRepoPreviewDto, GitHubSkillImportSelectionDto,
+    RepositoryImportReportDto,
+};
 
 #[tauri::command]
 pub fn preview_repository_import(
@@ -53,6 +56,59 @@ pub fn apply_repository_import(
             );
             AppResponse::error(
                 "repository_import_failed",
+                &error,
+                "errors.repositoryImportFailed",
+            )
+        }
+    }
+}
+
+#[tauri::command]
+pub fn preview_github_repo_import(
+    state: tauri::State<'_, AppContainer>,
+    repo_url: String,
+) -> AppResponse<GitHubRepoPreviewDto> {
+    let service = RepositoryImportService::with_container(state.inner());
+
+    match service.preview_github_repo_import(&repo_url) {
+        Ok(preview) => AppResponse::success(preview),
+        Err(error) => {
+            record_history_failure(
+                "operation",
+                "GitHub skill import preview failed",
+                "github-skill-import-preview",
+                &error,
+                Some(&repo_url),
+            );
+            AppResponse::error(
+                "github_skill_import_preview_failed",
+                &error,
+                "errors.repositoryImportPreviewFailed",
+            )
+        }
+    }
+}
+
+#[tauri::command]
+pub fn import_github_repo_skills(
+    state: tauri::State<'_, AppContainer>,
+    repo_url: String,
+    selections: Vec<GitHubSkillImportSelectionDto>,
+) -> AppResponse<GitHubRepoImportResultDto> {
+    let service = RepositoryImportService::with_container(state.inner());
+
+    match service.import_github_repo_skills(&repo_url, selections) {
+        Ok(result) => AppResponse::success(result),
+        Err(error) => {
+            record_history_failure(
+                "operation",
+                "GitHub skill import failed",
+                "github-skill-import",
+                &error,
+                Some(&repo_url),
+            );
+            AppResponse::error(
+                "github_skill_import_failed",
                 &error,
                 "errors.repositoryImportFailed",
             )

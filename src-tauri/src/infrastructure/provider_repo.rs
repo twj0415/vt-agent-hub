@@ -99,6 +99,21 @@ impl<'a> ProviderRepo<'a> {
             .map_err(|error| error.to_string())
     }
 
+    pub fn find_config_for_provider_tool(
+        &self,
+        provider_id: i32,
+        tool_id: i32,
+    ) -> Result<ProviderToolConfigRecord, String> {
+        self.db
+            .connection()
+            .query_row(
+                "select id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 and tool_id = ?2 order by id asc limit 1",
+                rusqlite::params![provider_id, tool_id],
+                Self::map_config,
+            )
+            .map_err(|error| error.to_string())
+    }
+
     pub fn upsert_provider(
         &self,
         id: Option<i32>,
@@ -300,7 +315,12 @@ impl<'a> ProviderRepo<'a> {
         }
 
         tx.execute(
-            "update provider_tool_configs set is_active = case when id = ?1 then 1 else 0 end, state = case when id = ?1 then 502 else 504 end where tool_id = ?2",
+            "update provider_tool_configs set is_active = 0, state = 504 where tool_id = ?1 and is_active = 1",
+            rusqlite::params![tool_id],
+        )
+        .map_err(|error| error.to_string())?;
+        tx.execute(
+            "update provider_tool_configs set is_active = 1, state = 502 where id = ?1 and tool_id = ?2",
             rusqlite::params![config_id, tool_id],
         )
         .map_err(|error| error.to_string())?;

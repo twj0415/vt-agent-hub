@@ -17,6 +17,7 @@
       versionLabel: string;
       summaryText: string;
       toolTags: string[];
+      toolCount: number;
       toolTitle: string;
     };
     busy: boolean;
@@ -84,7 +85,7 @@
         <div class="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-none">
           <span class="inline-flex items-baseline gap-1" :title="item.toolTitle">
             <span class="font-medium text-muted/65">{{ t('ui.common.tools') }}</span>
-            <span class="font-semibold text-text/82">{{ item.toolTags.length }}</span>
+            <span class="font-semibold text-text/82">{{ item.toolCount }}</span>
           </span>
           <span class="inline-flex items-baseline gap-1">
             <span class="font-medium text-muted/65">{{ t('ui.common.version') }}</span>

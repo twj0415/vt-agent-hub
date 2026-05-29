@@ -1,6 +1,7 @@
 use crate::adapters::tool_adapter::PresetConfigBuildInput;
-use crate::core::tool_registry::CODEX_TOOL_ID;
+use crate::core::tool_registry::{CLAUDE_TOOL_ID, CODEX_TOOL_ID};
 use crate::dto::ProviderSaveInputDto;
+use crate::infrastructure::credential_store::CredentialStore;
 use crate::infrastructure::provider_repo::{ProviderRecord, ProviderToolConfigRecord};
 
 use super::constants::{CODEX_MODELS, CODEX_REASONING};
@@ -18,17 +19,24 @@ impl ProviderRuntimeService {
             return Err("At least one tool config is required.".to_string());
         }
         for config in &input.tool_configs {
-            if config.tool_id != CODEX_TOOL_ID {
-                return Err(format!(
-                    "Tool {} provider config is reserved but cannot be saved yet.",
-                    config.tool_id
-                ));
+            match config.tool_id {
+                CODEX_TOOL_ID => Self::validate_codex_values(
+                    config.model.trim(),
+                    config.reasoning.trim(),
+                    config.base_url.trim(),
+                )?,
+                CLAUDE_TOOL_ID => Self::validate_claude_values(
+                    config.model.trim(),
+                    config.reasoning.trim(),
+                    config.base_url.trim(),
+                )?,
+                _ => {
+                    return Err(format!(
+                        "Tool {} provider config is reserved but cannot be saved yet.",
+                        config.tool_id
+                    ));
+                }
             }
-            Self::validate_codex_values(
-                config.model.trim(),
-                config.reasoning.trim(),
-                config.base_url.trim(),
-            )?;
         }
         Ok(())
     }
@@ -55,8 +63,21 @@ impl ProviderRuntimeService {
         Ok(())
     }
 
+    fn validate_claude_values(model: &str, reasoning: &str, base_url: &str) -> Result<(), String> {
+        if model.trim().is_empty() {
+            return Err("Provider model is required.".to_string());
+        }
+        if reasoning.trim().is_empty() {
+            return Err("Provider reasoning is required.".to_string());
+        }
+        if base_url.trim().is_empty() {
+            return Err("Provider base URL is required.".to_string());
+        }
+        Ok(())
+    }
+
     pub(super) fn ensure_supported_config(config: &ProviderToolConfigRecord) -> Result<(), String> {
-        if config.tool_id != CODEX_TOOL_ID {
+        if !matches!(config.tool_id, CODEX_TOOL_ID | CLAUDE_TOOL_ID) {
             return Err(format!(
                 "Tool {} provider apply is not supported yet.",
                 config.tool_id
@@ -85,7 +106,9 @@ impl ProviderRuntimeService {
             model: config.model.clone(),
             reasoning: config.reasoning.clone(),
             base_url: config.base_url.clone(),
+            credential_token: CredentialStore::load_provider_token(&config.credential_ref).ok().flatten(),
             config_json: config.config_json.clone(),
         }
     }
+
 }

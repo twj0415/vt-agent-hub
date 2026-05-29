@@ -4,6 +4,7 @@ mod bootstrap;
 mod credentials;
 mod diagnostics;
 mod dialogs;
+mod first_run_import;
 mod history_log;
 mod imports;
 mod project_import;
@@ -21,7 +22,14 @@ pub use diagnostics::{
     restore_backup, scan_library_diagnostics,
 };
 pub use dialogs::{pick_file_path, pick_folder_path};
-pub use imports::{apply_repository_import, preview_repository_import};
+pub use first_run_import::{
+    apply_first_run_import, dismiss_first_run_import, get_first_run_import_status,
+    preview_first_run_import, reset_first_run_import_status,
+};
+pub use imports::{
+    apply_repository_import, import_github_repo_skills, preview_github_repo_import,
+    preview_repository_import,
+};
 pub use project_import::import_project_from_git;
 pub use projects::{
     apply_global_output, apply_project_output, cleanup_global_output, cleanup_project_output,
@@ -30,8 +38,8 @@ pub use projects::{
     save_tool_global_rule_bindings, save_tool_skill_bindings, scan_project_output,
 };
 pub use providers::{
-    apply_provider_to_live_config, delete_provider, duplicate_provider, import_provider_config,
-    list_providers, preview_provider_apply, save_provider,
+    apply_provider_to_live_config, delete_provider, detect_provider_live_drift, duplicate_provider,
+    import_provider_config, list_providers, preview_provider_apply, save_provider,
 };
 pub use rules::{
     delete_rule_asset, import_rule_asset, move_rule_asset, preview_rule_impact,

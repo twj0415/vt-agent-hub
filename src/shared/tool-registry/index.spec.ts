@@ -10,9 +10,9 @@ describe('toolRegistry', () => {
     expect(getToolById(toolIds.codex)?.capabilities).toBeDefined()
     expect(getToolById(toolIds.claude)?.capabilities).toEqual({
       rules: true,
-      presets: false,
+      presets: true,
       credentials: false,
-      skillInstall: false,
+      skillInstall: true,
       liveScan: true,
       agentsOutput: true,
     })

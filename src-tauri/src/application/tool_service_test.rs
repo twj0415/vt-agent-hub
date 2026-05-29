@@ -4,6 +4,7 @@ mod tests {
     use crate::adapters::tool_adapter::{
         ProjectOutputBuildInput, ProjectOutputRule, ProjectOutputScope, ToolAdapter,
     };
+    use crate::dto::{ProviderImportInputDto, ProviderImportInputPartDto};
     use crate::application::tool_service::ToolService;
     use crate::core::status_codes::{
         SKILL_INSTALL_INSTALLED, SKILL_INSTALL_NOT_INSTALLED, SKILL_INSTALL_SOURCE_MISSING,
@@ -146,6 +147,70 @@ mod tests {
     }
 
     #[test]
+    fn imports_provider_configs_through_adapter_boundary() {
+        let service = ToolService::new();
+        let codex = service
+            .import_provider_config(
+                CODEX_TOOL_ID,
+                &ProviderImportInputDto {
+                    tool_id: CODEX_TOOL_ID,
+                    parts: vec![
+                        ProviderImportInputPartDto {
+                            role: "config".to_string(),
+                            content: r#"
+model_provider = "OpenAI"
+model = "gpt-5.5"
+review_model = "gpt-5.4"
+model_reasoning_effort = "medium"
+base_url = "https://api.openai.com/v1"
+"#
+                                .to_string(),
+                        },
+                        ProviderImportInputPartDto {
+                            role: "auth".to_string(),
+                            content: r#"{ "OPENAI_API_KEY": "codex-token" }"#.to_string(),
+                        },
+                    ],
+                },
+            )
+            .expect("codex import should succeed");
+
+        assert_eq!(codex.provider_name, "OpenAI");
+        assert_eq!(codex.category, "official");
+        assert_eq!(codex.display_name, "OpenAI");
+        assert_eq!(codex.credential_token.as_deref(), Some("codex-token"));
+        assert_eq!(codex.config_json.get("wireApi").and_then(serde_json::Value::as_str), Some("responses"));
+
+        let claude = service
+            .import_provider_config(
+                CLAUDE_TOOL_ID,
+                &ProviderImportInputDto {
+                    tool_id: CLAUDE_TOOL_ID,
+                    parts: vec![ProviderImportInputPartDto {
+                        role: "config".to_string(),
+                        content: r#"
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "true",
+    "AWS_REGION": "eu-west-1",
+    "ANTHROPIC_API_KEY": "claude-token"
+  }
+}
+"#
+                            .to_string(),
+                    }],
+                },
+            )
+            .expect("claude import should succeed");
+
+        assert_eq!(claude.provider_name, "Claude Bedrock");
+        assert_eq!(claude.category, "custom_gateway");
+        assert_eq!(claude.base_url, "bedrock://eu-west-1");
+        assert_eq!(claude.credential_token.as_deref(), Some("claude-token"));
+        assert_eq!(claude.config_json.get("providerKind").and_then(serde_json::Value::as_str), Some("bedrock"));
+    }
+
+    #[test]
     fn preset_rendering_is_adapter_owned() {
         let service = ToolService::new();
         let existing = "keep = \"yes\"\n";
@@ -158,6 +223,7 @@ mod tests {
                     model: "gpt-5.5".to_string(),
                     reasoning: "medium".to_string(),
                     base_url: "https://api.openai.com/v1".to_string(),
+                    credential_token: None,
                     config_json: serde_json::Value::Null,
                 },
                 existing,

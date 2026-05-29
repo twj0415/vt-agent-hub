@@ -18,6 +18,9 @@
       version: string;
       ruleTags: string[];
       rulePreviewTitle: string;
+      skillTags: string[];
+      skillCount: number;
+      skillPreviewTitle: string;
       statusLabel: string;
     };
     busy: boolean;
@@ -33,6 +36,7 @@
 
   const tool = computed(() => toolRegistry.find((item) => item.id === props.item.id));
   const ruleCount = computed(() => props.item.ruleTags.length);
+  const skillCount = computed(() => props.item.skillCount);
 </script>
 
 <template>
@@ -86,9 +90,13 @@
             <span class="font-medium text-muted/65">{{ t('ui.common.version') }}</span>
             <span class="font-semibold text-text/72">{{ item.version }}</span>
           </span>
-          <span v-if="ruleCount" class="inline-flex items-baseline gap-1" :title="item.rulePreviewTitle">
+          <span class="inline-flex items-baseline gap-1" :title="item.rulePreviewTitle">
             <span class="font-medium text-muted/65">{{ t('ui.common.rules') }}</span>
-            <span class="font-semibold text-text/82">{{ ruleCount }}</span>
+            <span class="font-semibold text-text/82">{{ ruleCount || '-' }}</span>
+          </span>
+          <span class="inline-flex items-baseline gap-1" :title="item.skillPreviewTitle">
+            <span class="font-medium text-muted/65">{{ t('ui.common.skills') }}</span>
+            <span class="font-semibold text-text/82">{{ skillCount }}</span>
           </span>
         </div>
       </div>

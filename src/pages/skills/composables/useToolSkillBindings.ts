@@ -15,6 +15,7 @@ export function useToolSkillBindings() {
       .map((item) => item.id),
   ))
 
+  const bindableSkills = computed(() => skillStore.items)
   const availableSkills = computed(() => skillStore.items.filter((item) => !boundSkillIds.value.has(item.id)))
 
   function categoryLabel(categoryCode: number) {
@@ -43,6 +44,7 @@ export function useToolSkillBindings() {
 
   return {
     availableSkills,
+    bindableSkills,
     boundSkills,
     categoryLabel,
     skillDescription,

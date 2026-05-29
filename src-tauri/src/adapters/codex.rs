@@ -1,13 +1,15 @@
-use crate::adapters::tool_adapter::ToolActionResult;
 use crate::adapters::tool_adapter::{
-    render_managed_rules_markdown, PresetConfigBuildInput, ProjectOutputBuildInput, ToolAdapter,
+    render_managed_rules_markdown, PresetConfigBuildInput, ProjectOutputBuildInput,
+    ProviderConfigImport, ToolActionResult, ToolAdapter,
 };
 use crate::core::product::{MANAGED_MARKER, MANAGED_PRESET_END, MANAGED_PRESET_START};
 use crate::core::tool_registry::CODEX_TOOL_ID;
 use crate::domain::tool::Tool;
+use crate::dto::ProviderImportInputDto;
 use crate::infrastructure::codex_runtime_repo::CodexRuntimeRepo;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::PathBuf;
+use toml::Value as TomlValue;
 
 const DEFAULT_MODEL_CONTEXT_WINDOW: i64 = 1_000_000;
 const DEFAULT_MODEL_AUTO_COMPACT_TOKEN_LIMIT: i64 = 900_000;
@@ -125,9 +127,131 @@ impl ToolAdapter for CodexAdapter {
             base_url: extract_config_value(content, "base_url")
                 .or_else(|| extract_config_value(content, "baseUrl"))
                 .unwrap_or_else(|| "https://api.openai.com/v1".to_string()),
+            credential_token: None,
             config_json: Value::Null,
         })
     }
+
+    fn import_provider_config(&self, input: &ProviderImportInputDto) -> Result<ProviderConfigImport, String> {
+        let config_content = required_import_part(input, "config")?;
+        let mut parsed = parse_provider_config(config_content)?;
+        parsed.credential_token = optional_import_part(input, "auth")
+            .map(read_auth_token_from_content)
+            .transpose()?
+            .filter(|token| !token.trim().is_empty());
+        Ok(parsed)
+    }
+}
+
+pub fn parse_provider_config(content: &str) -> Result<ProviderConfigImport, String> {
+    let content = content.trim_start_matches('\u{feff}');
+    let parsed = content
+        .parse::<TomlValue>()
+        .map_err(|error| format!("Failed to parse provider config.toml: {error}"))?;
+    let root = parsed
+        .as_table()
+        .ok_or_else(|| "Provider config.toml must be a TOML table.".to_string())?;
+    let provider_tables = root
+        .get("model_providers")
+        .and_then(TomlValue::as_table)
+        .cloned()
+        .unwrap_or_default();
+
+    let provider_key = table_string(root, "model_provider")
+        .or_else(|| provider_tables.keys().next().cloned())
+        .unwrap_or_else(|| "OpenAI".to_string());
+    let provider_table = provider_tables
+        .get(&provider_key)
+        .and_then(TomlValue::as_table);
+    let provider_name = provider_table
+        .and_then(|table| value_string(table, "name"))
+        .unwrap_or_else(|| provider_key.clone());
+    let model = table_string(root, "model").unwrap_or_else(|| "gpt-5.5".to_string());
+    let review_model = table_string(root, "review_model").unwrap_or_else(|| model.clone());
+    let reasoning = table_string(root, "model_reasoning_effort")
+        .or_else(|| table_string(root, "reasoning"))
+        .unwrap_or_else(|| "medium".to_string());
+    let base_url = provider_table
+        .and_then(|table| value_string(table, "base_url"))
+        .or_else(|| table_string(root, "base_url"))
+        .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
+    let wire_api = provider_table
+        .and_then(|table| value_string(table, "wire_api"))
+        .unwrap_or_else(|| "responses".to_string());
+    let requires_openai_auth = provider_table
+        .and_then(|table| value_bool(table, "requires_openai_auth"))
+        .unwrap_or(true);
+
+    Ok(ProviderConfigImport {
+        provider_name: provider_name.clone(),
+        category: "official".to_string(),
+        display_name: provider_name,
+        model,
+        reasoning,
+        base_url,
+        credential_token: None,
+        config_json: json!({
+            "reviewModel": review_model,
+            "wireApi": wire_api,
+            "requiresOpenaiAuth": requires_openai_auth,
+            "disableResponseStorage": table_bool(root, "disable_response_storage").unwrap_or(true),
+            "networkAccess": table_string(root, "network_access").unwrap_or_else(|| "enabled".to_string()),
+            "windowsWslSetupAcknowledged": table_bool(root, "windows_wsl_setup_acknowledged").unwrap_or(true),
+            "modelContextWindow": table_i64(root, "model_context_window").unwrap_or(1_000_000),
+            "modelAutoCompactTokenLimit": table_i64(root, "model_auto_compact_token_limit").unwrap_or(900_000),
+        }),
+    })
+}
+
+fn required_import_part<'a>(input: &'a ProviderImportInputDto, role: &str) -> Result<&'a str, String> {
+    optional_import_part(input, role)
+        .filter(|content| !content.trim().is_empty())
+        .ok_or_else(|| format!("Provider import requires pasted {role} content."))
+}
+
+fn optional_import_part<'a>(input: &'a ProviderImportInputDto, role: &str) -> Option<&'a str> {
+    input
+        .parts
+        .iter()
+        .find(|part| part.role.trim().eq_ignore_ascii_case(role))
+        .map(|part| part.content.trim())
+}
+
+fn read_auth_token_from_content(content: &str) -> Result<String, String> {
+    let value = serde_json::from_str::<Value>(content)
+        .map_err(|error| format!("Provider auth JSON is invalid: {error}"))?;
+    Ok(value
+        .get("OPENAI_API_KEY")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_string())
+}
+
+fn table_string(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<String> {
+    table
+        .get(key)
+        .and_then(TomlValue::as_str)
+        .map(str::to_string)
+}
+
+fn value_string(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<String> {
+    table
+        .get(key)
+        .and_then(TomlValue::as_str)
+        .map(str::to_string)
+}
+
+fn value_bool(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<bool> {
+    table.get(key).and_then(TomlValue::as_bool)
+}
+
+fn table_bool(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<bool> {
+    value_bool(table, key)
+}
+
+fn table_i64(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<i64> {
+    table.get(key).and_then(TomlValue::as_integer)
 }
 
 fn build_managed_config(input: &PresetConfigBuildInput) -> ManagedCodexConfig {
@@ -444,6 +568,7 @@ mod tests {
                 "modelAutoCompactTokenLimit": 900_000,
                 "requiresOpenaiAuth": true
             }),
+            credential_token: None,
         }
     }
 

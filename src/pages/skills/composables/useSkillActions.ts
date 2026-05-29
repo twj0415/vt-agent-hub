@@ -1,5 +1,5 @@
 import { Modal } from 'ant-design-vue'
-import { DeleteOutlined } from '@ant-design/icons-vue'
+import { AppstoreOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 import type { CardMoreMenuItem } from '@/shared/types/ui'
 import { useSkillStore } from '@/shared/stores/skills'
@@ -24,10 +24,12 @@ export function useSkillActions() {
   }
 
   function handleMore(key: string, item: { id: number }) {
+    if (key === 'bind-tool') skillStore.openToolBinding(item.id)
     if (key === 'delete') confirmSkillDelete(item.id)
   }
 
   const moreItems: CardMoreMenuItem[] = [
+    { key: 'bind-tool', label: t('pages.skills.bindTool'), icon: AppstoreOutlined },
     { key: 'delete', label: t('common.delete'), icon: DeleteOutlined, danger: true },
   ]
 

@@ -27,14 +27,14 @@
       titleKey: 'nav.assets',
       items: [
         { key: 'rules', labelKey: 'nav.rules', to: appRoutes.rules },
-        // { key: 'skills', labelKey: 'nav.skills', to: appRoutes.skills },
-        // { key: 'presets', labelKey: 'nav.providers', to: appRoutes.presets },
+        { key: 'skills', labelKey: 'nav.skills', to: appRoutes.skills },
+        { key: 'presets', labelKey: 'nav.providers', to: appRoutes.presets },
       ],
     },
   ];
 
   const footerItems: NavItem[] = [
-    // { key: 'history', labelKey: 'nav.history', to: appRoutes.history }
+    { key: 'history', labelKey: 'nav.history', to: appRoutes.history }
   ];
 
   const route = useRoute();

@@ -4,7 +4,7 @@ use crate::commands::history_log::{record_command_failure, CommandFailure};
 use crate::core::routes::ROUTE_PRESETS;
 use crate::dto::{
     AppResponse, ProviderApplyPreviewDto, ProviderApplyResultDto, ProviderImportDraftDto,
-    ProviderImportInputDto, ProviderSaveInputDto, ProviderSummaryDto,
+    ProviderImportInputDto, ProviderLiveDriftDto, ProviderSaveInputDto, ProviderSummaryDto,
 };
 
 #[tauri::command]
@@ -136,6 +136,23 @@ pub fn apply_provider_to_live_config(
                 "errors.providerApplyFailed",
             )
         }
+    }
+}
+
+#[tauri::command]
+pub fn detect_provider_live_drift(
+    state: tauri::State<'_, AppContainer>,
+    config_id: i32,
+) -> AppResponse<ProviderLiveDriftDto> {
+    let service = ProviderRuntimeService::with_container(state.inner());
+
+    match service.detect_live_drift(config_id) {
+        Ok(result) => AppResponse::success(result),
+        Err(error) => AppResponse::error(
+            "provider_drift_check_failed",
+            &error,
+            "errors.providerDriftCheckFailed",
+        ),
     }
 }
 

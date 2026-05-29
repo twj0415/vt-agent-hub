@@ -2,44 +2,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Value};
 
-use crate::dto::ProviderImportInputDto;
 use crate::infrastructure::credential_store::CredentialStore;
 use crate::infrastructure::provider_repo::ProviderToolConfigRecord;
 
 use super::ProviderRuntimeService;
 
 impl ProviderRuntimeService {
-    pub(super) fn required_import_part<'a>(
-        input: &'a ProviderImportInputDto,
-        role: &str,
-    ) -> Result<&'a str, String> {
-        Self::optional_import_part(input, role)
-            .filter(|content| !content.trim().is_empty())
-            .ok_or_else(|| format!("Provider import requires pasted {role} content."))
-    }
-
-    pub(super) fn optional_import_part<'a>(
-        input: &'a ProviderImportInputDto,
-        role: &str,
-    ) -> Option<&'a str> {
-        input
-            .parts
-            .iter()
-            .find(|part| part.role.trim().eq_ignore_ascii_case(role))
-            .map(|part| part.content.trim())
-    }
-
-    pub(super) fn read_auth_token_from_content(content: &str) -> Result<String, String> {
-        let value = serde_json::from_str::<Value>(content)
-            .map_err(|error| format!("Provider auth JSON is invalid: {error}"))?;
-        Ok(value
-            .get("OPENAI_API_KEY")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .trim()
-            .to_string())
-    }
-
     pub(super) fn render_auth_json(token: &str) -> Result<String, String> {
         serde_json::to_string_pretty(&json!({ "OPENAI_API_KEY": token }))
             .map(|value| value + "\n")
@@ -82,7 +50,7 @@ impl ProviderRuntimeService {
             .unwrap_or_else(|| Self::generate_credential_ref(provider_name, tool_id))
     }
 
-    pub(super) fn generate_credential_ref(provider_name: &str, tool_id: i32) -> String {
+    pub(crate) fn generate_credential_ref(provider_name: &str, tool_id: i32) -> String {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|duration| duration.as_millis())

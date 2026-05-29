@@ -112,6 +112,122 @@ export type RepositoryImportReport = {
   warnings: string[]
 }
 
+export type FirstRunImportStatus = {
+  status: 'pending' | 'completed' | 'dismissed' | 'no_candidates' | string
+  shouldPrompt: boolean
+}
+
+export type FirstRunImportRoot = {
+  tool: 'claude' | 'codex' | string
+  path: string
+  exists: boolean
+  candidateCount: number
+}
+
+export type FirstRunImportCandidate = {
+  id: string
+  assetType: 'rule' | 'skill' | 'command' | 'prompt' | 'provider_preset' | string
+  targetAssetType: 'rule' | 'skill' | 'provider' | 'none' | string
+  sourceToolId: number
+  sourceTool: 'claude' | 'codex' | string
+  sourceKind: string
+  name: string
+  summary: string
+  sourcePath: string
+  relativePath: string
+  status: 'ready' | 'conflict' | 'warning' | 'unsupported' | 'error' | string
+  conflict?: string | null
+  existingId?: number | null
+  defaultSelected: boolean
+  selectable: boolean
+  recommendedAction: 'create' | 'rename' | 'skip' | 'overwrite' | 'unavailable' | string
+  contentPreview: string
+  warnings: string[]
+  metadata: Record<string, unknown>
+}
+
+export type FirstRunImportPreview = {
+  status: string
+  scanVersion: string
+  roots: FirstRunImportRoot[]
+  candidates: FirstRunImportCandidate[]
+  warnings: string[]
+  credentialPolicy: string
+}
+
+export type FirstRunImportApplyInput = {
+  selectedIds: string[]
+  conflictStrategy?: 'rename' | 'skip' | 'overwrite'
+  confirm: boolean
+}
+
+export type FirstRunImportAppliedAsset = {
+  id: number
+  assetType: string
+  name: string
+  sourceTool: string
+  sourcePath: string
+  operation: string
+}
+
+export type FirstRunImportApplyResult = {
+  importedRules: number
+  importedSkills: number
+  importedProviders: number
+  skipped: number
+  renamed: number
+  overwritten: number
+  assets: FirstRunImportAppliedAsset[]
+  warnings: string[]
+}
+
+export type GitHubRepoRef = {
+  owner: string
+  repo: string
+  branch: string
+  normalizedUrl: string
+}
+
+export type GitHubSkillConflict = {
+  existingSkillId: number
+  existingName: string
+}
+
+export type GitHubSkillPreview = {
+  sourcePath: string
+  skillId: string
+  skillName: string
+  description?: string | null
+  rootDirectory: string
+  skillDirectoryName: string
+  conflict?: GitHubSkillConflict | null
+}
+
+export type GitHubRepoPreview = {
+  repo: GitHubRepoRef
+  skills: GitHubSkillPreview[]
+}
+
+export type GitHubSkillImportSelection = {
+  sourcePath: string
+  resolution: 'skip' | 'overwrite' | 'rename'
+  renamedSkillId?: string | null
+}
+
+export type ImportedGitHubSkill = {
+  sourcePath: string
+  skillId: string
+  skillName: string
+  assetId: number
+  operation: string
+}
+
+export type GitHubRepoImportResult = {
+  repo: GitHubRepoRef
+  importedSkills: ImportedGitHubSkill[]
+  skippedSkills: string[]
+}
+
 export type SkillFileNode = {
   path: string
   isDir: boolean
@@ -543,5 +659,17 @@ export type ProviderApplyResult = {
   targetPaths: string[]
   backupPaths: string[]
   message: string
+}
+
+export type ProviderLiveDrift = {
+  toolId: number
+  providerId: number
+  configId: number
+  providerName: string
+  hasDrift: boolean
+  targetPath: string
+  targetExists: boolean
+  files: ProviderApplyFilePreview[]
+  warning?: string
 }
 

@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTaxonomyOptions } from '@/shared/composables/useTaxonomyOptions'
+import { translateIfExists } from '@/shared/i18n/translate'
 import { useRuleStore, type RuleItem } from '@/shared/stores/rules'
 import { getToolById } from '@/shared/tool-registry'
 
@@ -15,7 +16,9 @@ function joined(values: string[], empty: string) {
 }
 
 function text(value: string, emptyText: string) {
-  return value.trim() || emptyText
+  const trimmed = value.trim()
+  if (!trimmed) return emptyText
+  return translateIfExists(trimmed, trimmed)
 }
 
 export function useRuleCards() {

@@ -6,6 +6,7 @@ mod tests {
     use crate::application::service_context::ServiceContext;
     use crate::application::write_service::WriteService;
     use crate::infrastructure::database::Database;
+    use crate::infrastructure::provider_repo::ProviderRepo;
     use crate::infrastructure::resource_repo::ResourceRepo;
     use crate::infrastructure::tool_repo::ToolRepo;
 
@@ -124,6 +125,38 @@ mod tests {
                 .unwrap();
             assert_eq!(count, 0, "{table} should not keep disabled tool rows");
         }
+    }
+
+    #[test]
+    fn activating_provider_config_switches_active_row_without_unique_conflict() {
+        let db_path = unique_db_path("provider-activate-switch");
+        let db = Database::open_at(&db_path).expect("db should open");
+        db.connection()
+            .execute(
+                "insert into providers (id, name, category, website, note, sort_order) values (901, 'Provider A', 'official', '', '', 0), (902, 'Provider B', 'official', '', '', 10)",
+                [],
+            )
+            .expect("providers should insert");
+        db.connection()
+            .execute(
+                "insert into provider_tool_configs (id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (901, 901, 101, 1, 'A', 'gpt-5.5', 'medium', 'https://api.openai.com/v1', '', '{}', 1, 502), (902, 902, 101, 1, 'B', 'gpt-5.5', 'high', 'http://43.173.89.135:8080', '', '{}', 0, 504)",
+                [],
+            )
+            .expect("configs should insert");
+
+        ProviderRepo::new(&db)
+            .activate_config(101, 902)
+            .expect("provider config should activate without unique conflict");
+
+        let active_id: i32 = db
+            .connection()
+            .query_row(
+                "select id from provider_tool_configs where tool_id = 101 and is_active = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("active config should exist");
+        assert_eq!(active_id, 902);
     }
 
     #[test]

@@ -4,6 +4,10 @@ import type {
   LibraryDiagnostics,
   AppResponse,
   BackupActionResult,
+  FirstRunImportApplyInput,
+  FirstRunImportApplyResult,
+  FirstRunImportPreview,
+  FirstRunImportStatus,
   BackupRestorePreview,
   BackupSnapshot,
   LibrarySnapshot,
@@ -19,6 +23,7 @@ import type {
   ProviderApplyResult,
   ProviderImportDraft,
   ProviderImportInput,
+  ProviderLiveDrift,
   ProviderSaveInput,
   ProviderSummary,
   RepositoryImportReport,
@@ -35,6 +40,9 @@ import type {
   ToolsSnapshot,
   ProjectContextSnapshot,
   GitProjectImportInput,
+  GitHubRepoImportResult,
+  GitHubRepoPreview,
+  GitHubSkillImportSelection,
 } from './client'
 
 export function getAppBootstrap() {
@@ -43,6 +51,26 @@ export function getAppBootstrap() {
 
 export function resetAppData(confirmRisk: boolean) {
   return invoke<AppResponse<string>>('reset_app_data', { confirmRisk })
+}
+
+export function getFirstRunImportStatus() {
+  return invoke<AppResponse<FirstRunImportStatus>>('get_first_run_import_status')
+}
+
+export function previewFirstRunImport() {
+  return invoke<AppResponse<FirstRunImportPreview>>('preview_first_run_import')
+}
+
+export function applyFirstRunImport(payload: FirstRunImportApplyInput) {
+  return invoke<AppResponse<FirstRunImportApplyResult>>('apply_first_run_import', { payload })
+}
+
+export function dismissFirstRunImport(status: string, reason?: string) {
+  return invoke<AppResponse<FirstRunImportStatus>>('dismiss_first_run_import', { status, reason: reason ?? null })
+}
+
+export function resetFirstRunImportStatus() {
+  return invoke<AppResponse<FirstRunImportStatus>>('reset_first_run_import_status')
 }
 
 export function getProjectContextSnapshot() {
@@ -292,6 +320,10 @@ export function applyProviderToLiveConfig(configId: number, confirmRisk: boolean
   return invoke<AppResponse<ProviderApplyResult>>('apply_provider_to_live_config', { configId, confirmRisk })
 }
 
+export function detectProviderLiveDrift(configId: number) {
+  return invoke<AppResponse<ProviderLiveDrift>>('detect_provider_live_drift', { configId })
+}
+
 export function saveToolCredentialState(toolId: number, token: string) {
   return invoke<AppResponse<boolean>>('save_tool_credential_state', { toolId, token })
 }
@@ -314,6 +346,14 @@ export function applyRepositoryImport(source: string, branch: string, conflictSt
     branch,
     conflictStrategy,
   })
+}
+
+export function previewGitHubRepoImport(repoUrl: string) {
+  return invoke<AppResponse<GitHubRepoPreview>>('preview_github_repo_import', { repoUrl })
+}
+
+export function importGitHubRepoSkills(repoUrl: string, selections: GitHubSkillImportSelection[]) {
+  return invoke<AppResponse<GitHubRepoImportResult>>('import_github_repo_skills', { repoUrl, selections })
 }
 
 export function pickFolderPath() {

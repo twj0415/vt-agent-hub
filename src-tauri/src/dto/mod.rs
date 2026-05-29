@@ -1,6 +1,7 @@
 mod bootstrap;
 mod catalog;
 mod diagnostics;
+mod first_run_import;
 mod history;
 mod imports;
 mod projects;
@@ -13,6 +14,7 @@ mod workspace;
 pub use bootstrap::*;
 pub use catalog::*;
 pub use diagnostics::*;
+pub use first_run_import::*;
 pub use history::*;
 pub use imports::*;
 pub use projects::*;

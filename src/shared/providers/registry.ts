@@ -81,6 +81,12 @@ export const codexProviderSchema: ProviderToolSchema = {
   ],
 }
 
+export const claudeModelOptions = [
+  { label: 'Claude Opus 4.7', value: 'claude-opus-4-7' },
+  { label: 'Claude Sonnet 4.6', value: 'claude-sonnet-4-6' },
+  { label: 'Claude Haiku 4.5', value: 'claude-haiku-4-5-20251001' },
+] as const satisfies readonly FormFieldOption<string>[]
+
 export const claudeProviderSchema: ProviderToolSchema = {
   toolId: toolIds.claude,
   schemaVersion: 1,
@@ -99,11 +105,8 @@ export const claudeProviderSchema: ProviderToolSchema = {
       labelKey: 'pages.providers.form.modelLabel',
       helpKey: 'pages.providers.form.help.model',
       groupKey: 'pages.providers.form.group.runtime',
-      defaultValue: 'claude-4.5',
-      options: [
-        { label: 'Claude 4.5', value: 'claude-4.5' },
-        { label: 'Claude 4.1', value: 'claude-4.1' },
-      ],
+      defaultValue: 'claude-opus-4-7',
+      options: claudeModelOptions,
     },
     {
       key: 'reasoning',
@@ -146,9 +149,9 @@ export const codexProviderImportParts: ProviderImportPartSchema[] = [
 export const claudeProviderImportParts: ProviderImportPartSchema[] = [
   {
     role: 'config',
-    labelKey: 'pages.providers.importParts.configToml',
-    placeholderKey: 'pages.providers.importParts.configTomlPlaceholder',
-    helpKey: 'pages.providers.importParts.configTomlHelp',
+    labelKey: 'pages.providers.importParts.settingsJson',
+    placeholderKey: 'pages.providers.importParts.settingsJsonPlaceholder',
+    helpKey: 'pages.providers.importParts.settingsJsonHelp',
     required: true,
     rows: 14,
   },
@@ -185,5 +188,6 @@ export function isSupportedProviderReasoning(value: string): value is ProviderRe
 }
 
 export function isSupportedProviderModel(toolId: number, value: string) {
+  if (toolId === toolIds.claude) return value.trim().length > 0
   return listProviderModelOptions(toolId).some((option) => option.value === value)
 }
