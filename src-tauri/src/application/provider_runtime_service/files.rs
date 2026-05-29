@@ -254,7 +254,7 @@ impl ProviderRuntimeService {
             }
         }
 
-        root_obj.insert("model".to_string(), Value::String(model.to_string()));
+        root_obj.insert("model".to_string(), Value::String("sonnet".to_string()));
         serde_json::to_string_pretty(&root)
             .map(|value| value + "\n")
             .map_err(|error| error.to_string())
@@ -376,6 +376,57 @@ mod tests {
         assert_eq!(
             env.get("ANTHROPIC_MODEL").and_then(serde_json::Value::as_str),
             Some("claude-opus-4-7")
+        );
+    }
+
+    #[test]
+    fn claude_settings_apply_keeps_top_level_model_as_sonnet_and_updates_env_models() {
+        let rendered = ProviderRuntimeService::render_claude_settings(
+            r#"{
+  "model": "sonnet",
+  "env": {
+    "ANTHROPIC_MODEL": "old-model",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "old-haiku",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "old-sonnet",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "old-opus"
+  }
+}"#,
+            &PresetConfigBuildInput {
+                name: "Claude Compatible".to_string(),
+                provider: "Claude Compatible".to_string(),
+                model: "gpt-5.5".to_string(),
+                reasoning: "xhigh".to_string(),
+                base_url: "http://43.173.89.135:8080".to_string(),
+                credential_token: None,
+                config_json: json!({
+                    "providerKind": "anthropic-compatible",
+                    "credentialKey": "ANTHROPIC_API_KEY"
+                }),
+            },
+        )
+        .expect("claude settings should render");
+        let parsed: serde_json::Value = serde_json::from_str(&rendered).expect("valid json");
+        let env = parsed.get("env").and_then(serde_json::Value::as_object).expect("env object");
+
+        assert_eq!(
+            parsed.get("model").and_then(serde_json::Value::as_str),
+            Some("sonnet")
+        );
+        assert_eq!(
+            env.get("ANTHROPIC_MODEL").and_then(serde_json::Value::as_str),
+            Some("gpt-5.5")
+        );
+        assert_eq!(
+            env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").and_then(serde_json::Value::as_str),
+            Some("gpt-5.5")
+        );
+        assert_eq!(
+            env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").and_then(serde_json::Value::as_str),
+            Some("gpt-5.5")
+        );
+        assert_eq!(
+            env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").and_then(serde_json::Value::as_str),
+            Some("gpt-5.5")
         );
     }
 }
