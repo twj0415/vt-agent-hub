@@ -8,13 +8,13 @@ const settingsStore = useSettingsStore()
 
 <template>
   <div class="grid gap-4 xl:grid-cols-2">
-    <section class="rounded-[16px] border border-line/60 bg-panel/60 p-4">
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.currentTool') }}</div>
-      <div class="mt-2 text-sm leading-6 text-muted">Codex</div>
+    <section class="rounded-vt-md border border-line bg-surface-2/40 p-4">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.currentTool') }}</div>
+      <div class="mt-2 text-[13px] leading-6 text-muted">Codex</div>
     </section>
-    <section class="rounded-[16px] border border-line/60 bg-panel/60 p-4">
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.credentialState') }}</div>
-      <div class="mt-2 text-sm leading-6 text-muted">{{ settingsStore.credentialStateLabel }}</div>
+    <section class="rounded-vt-md border border-line bg-surface-2/40 p-4">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.credentialState') }}</div>
+      <div class="mt-2 text-[13px] leading-6 text-muted">{{ settingsStore.credentialStateLabel }}</div>
     </section>
   </div>
 </template>

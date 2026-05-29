@@ -185,7 +185,6 @@ pub fn parse_provider_config(content: &str) -> Result<ProviderConfigImport, Stri
     Ok(ProviderConfigImport {
         provider_name: provider_name.clone(),
         category: "official".to_string(),
-        display_name: provider_name,
         model,
         reasoning,
         base_url,

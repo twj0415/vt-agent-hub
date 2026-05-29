@@ -30,7 +30,7 @@ function refreshApp() {
 </script>
 
 <template>
-  <a-popover v-model:open="settingsOpen" trigger="hover" placement="bottomRight" overlay-class-name="topbar-settings-popover">
+  <a-popover v-model:open="settingsOpen" trigger="click" placement="bottomRight" overlay-class-name="topbar-settings-popover">
     <a-button
       type="text"
       shape="circle"

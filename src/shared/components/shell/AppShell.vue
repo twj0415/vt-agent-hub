@@ -17,8 +17,8 @@ const dockVisible = computed(() => route.name === 'rules' || route.name === 'ski
     <div class="flex min-h-0 flex-1 bg-bg">
       <AppSidebar />
 
-      <main class="min-h-0 flex-1 overflow-hidden border-l border-line/50 bg-panel">
-        <div class="h-full overflow-y-auto bg-panel px-5 py-4 md:px-6 md:py-5">
+      <main class="min-h-0 flex-1 overflow-hidden border-l border-line/60 bg-bg">
+        <div class="h-full overflow-y-auto px-5 py-4 md:px-6 md:py-5">
           <RouterView />
         </div>
       </main>

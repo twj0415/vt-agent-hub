@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
 
     <div
       v-if="ruleCards.length"
-      class="overflow-hidden rounded-[16px] border border-line/60 bg-panel-strong/92 shadow-surface"
+      class="vt-card overflow-hidden"
     >
       <div ref="ruleListRef" class="divide-y divide-line/40">
         <RuleCard v-for="item in ruleCards" :key="item.id" :item="item" :busy="ruleListBusy" />

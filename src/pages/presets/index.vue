@@ -21,13 +21,13 @@
       </a-button>
     </PageHeader>
 
-    <div class="mb-3 inline-flex w-fit max-w-full self-start rounded-[14px] border border-line/60 bg-panel-strong/88 p-1 shadow-surface">
+    <div class="mb-3 inline-flex w-fit max-w-full self-start rounded-vt-md border border-line bg-panel p-1">
       <button
         v-for="option in providerFilterOptions"
         :key="option.value"
         type="button"
-        class="flex h-9 items-center gap-2 rounded-[10px] px-3 text-[12px] font-semibold transition-colors duration-fast ease-standard"
-        :class="providerStore.filterToolId === option.value ? 'bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgb(var(--vt-color-accent)/0.18)]' : 'text-muted hover:bg-text/[0.045] hover:text-text'"
+        class="flex h-9 items-center gap-2 rounded-vt-sm px-3 text-[12px] font-semibold transition-colors duration-fast ease-standard"
+        :class="providerStore.filterToolId === option.value ? 'bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgb(var(--vt-color-accent)/0.22)]' : 'text-muted hover:bg-text/[0.045] hover:text-text'"
         @click="setProviderFilter(option.value)"
       >
         <img v-if="option.iconSrc" :src="option.iconSrc" :alt="option.label" class="h-5 w-5 object-contain" />
@@ -70,7 +70,7 @@
 
     <div
       v-if="providerCards.length"
-      class="overflow-hidden rounded-[16px] border border-line/60 bg-panel-strong/92 shadow-surface"
+      class="vt-card overflow-hidden"
     >
       <div class="divide-y divide-line/40">
         <ProviderCard

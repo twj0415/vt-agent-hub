@@ -97,11 +97,7 @@ impl ProviderRuntimeService {
         config: &ProviderToolConfigRecord,
     ) -> PresetConfigBuildInput {
         PresetConfigBuildInput {
-            name: if config.display_name.trim().is_empty() {
-                provider.name.clone()
-            } else {
-                config.display_name.clone()
-            },
+            name: provider.name.clone(),
             provider: provider.name.clone(),
             model: config.model.clone(),
             reasoning: config.reasoning.clone(),

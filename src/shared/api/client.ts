@@ -228,6 +228,17 @@ export type GitHubRepoImportResult = {
   skippedSkills: string[]
 }
 
+export type LocalSkillsPreview = {
+  rootPath: string
+  skills: GitHubSkillPreview[]
+}
+
+export type LocalSkillsImportResult = {
+  rootPath: string
+  importedSkills: ImportedGitHubSkill[]
+  skippedSkills: string[]
+}
+
 export type SkillFileNode = {
   path: string
   isDir: boolean

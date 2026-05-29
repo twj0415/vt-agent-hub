@@ -24,9 +24,9 @@
     v-model:open="open"
     :title="null"
     :closable="false"
-    :width="width ?? 480"
+    :width="width ?? 520"
     :body-style="{
-      background: 'rgb(var(--vt-color-panel-strong) / 0.96)',
+      background: 'rgb(var(--vt-color-panel))',
       display: 'flex',
       flexDirection: 'column',
       minHeight: '0',
@@ -34,14 +34,14 @@
     }"
   >
     <header
-      class="flex h-12 shrink-0 items-center justify-between border-b border-line/35 px-6"
+      class="flex h-11 shrink-0 items-center justify-between border-b border-line/55 px-5"
     >
-      <h2 class="truncate text-[15px] font-semibold tracking-[-0.005em] text-text">
+      <h2 class="truncate text-[14px] font-semibold tracking-[-0.005em] text-text">
         {{ drawerTitle }}
       </h2>
       <button
         type="button"
-        class="flex h-6 w-6 items-center justify-center rounded-full text-[11px] text-muted transition-colors hover:bg-text/[0.06] hover:text-text"
+        class="flex h-6 w-6 items-center justify-center rounded-vt-sm text-[11px] text-muted transition-colors hover:bg-text/[0.06] hover:text-text"
         :aria-label="t('common.close')"
         @click="open = false"
       >
@@ -51,13 +51,13 @@
       </button>
     </header>
 
-    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-5">
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
       <slot />
     </div>
 
     <div
       v-if="$slots.footer"
-      class="shrink-0 border-t border-line/35 bg-panel/88 px-6 py-3 backdrop-blur-xl"
+      class="shrink-0 border-t border-line/55 bg-panel-strong/85 px-5 py-3 backdrop-blur-xl"
     >
       <div class="flex flex-wrap justify-end gap-2">
         <slot name="footer" />

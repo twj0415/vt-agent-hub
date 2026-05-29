@@ -78,7 +78,7 @@ function onKeydown(event: KeyboardEvent) {
       <div
         v-if="open"
         class="fixed inset-0 z-[1000] flex items-start justify-center px-4"
-        style="backdrop-filter: blur(10px) saturate(120%); background: rgba(0, 0, 0, 0.14)"
+        style="backdrop-filter: blur(12px) saturate(140%); background: rgba(0, 0, 0, 0.28)"
         @click.self="close"
       >
         <Transition
@@ -89,11 +89,11 @@ function onKeydown(event: KeyboardEvent) {
         >
           <div
             v-if="open"
-            class="mt-[17vh] flex max-h-[64vh] w-full max-w-[660px] flex-col overflow-hidden rounded-[18px] border border-line/55 bg-panel-strong/92 shadow-surface-lg"
-            style="backdrop-filter: blur(20px) saturate(180%)"
+            class="mt-[14vh] flex max-h-[64vh] w-full max-w-[660px] flex-col overflow-hidden rounded-vt-lg border border-line bg-panel-strong/95 shadow-surface-lg"
+            style="backdrop-filter: blur(24px) saturate(180%)"
           >
             <!-- 输入区：56px 高，无 border 只有底部细线分隔。 -->
-            <div class="flex h-14 shrink-0 items-center gap-3 border-b border-line/40 px-5">
+            <div class="flex h-14 shrink-0 items-center gap-3 border-b border-line/60 px-5">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="text-muted/60" aria-hidden="true">
                 <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4" />
                 <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
@@ -103,11 +103,11 @@ function onKeydown(event: KeyboardEvent) {
                 v-model="query"
                 type="text"
                 :placeholder="t('commandPalette.placeholder')"
-                class="h-full flex-1 bg-transparent text-[15px] font-medium text-text outline-none placeholder:text-muted/55"
+                class="h-full flex-1 bg-transparent text-[14px] font-medium text-text outline-none placeholder:text-muted/55"
                 @keydown="onKeydown"
               />
               <kbd
-                class="hidden shrink-0 rounded border border-line/60 bg-bg px-1.5 py-0.5 text-[10px] font-medium text-muted/70 md:inline-flex"
+                class="hidden shrink-0 rounded-vt-sm border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-muted/70 md:inline-flex"
               >
                 Esc
               </kbd>
@@ -120,7 +120,7 @@ function onKeydown(event: KeyboardEvent) {
               </div>
 
               <div v-for="[group, items] in groupedResults" :key="group" class="mb-2 last:mb-0">
-                <div class="px-5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted/55">
+                <div class="px-5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted/60">
                   {{ t(groupTitleKey[group]) }}
                 </div>
                 <button
@@ -128,15 +128,20 @@ function onKeydown(event: KeyboardEvent) {
                   :key="result.id"
                   type="button"
                   :data-active="indexOf(result) === activeIndex"
-                  class="flex w-full items-center gap-3 px-5 py-2 text-left transition-colors duration-fast ease-standard"
+                  class="relative flex w-full items-center gap-3 px-5 py-2 text-left transition-colors duration-fast ease-standard"
                   :class="
                     indexOf(result) === activeIndex
-                      ? 'bg-accent/[0.105] text-text shadow-[inset_3px_0_0_rgb(var(--vt-color-accent)/0.75)]'
+                      ? 'bg-accent/[0.14] text-text'
                       : 'text-text hover:bg-text/[0.045]'
                   "
                   @mouseenter="activeIndex = indexOf(result)"
                   @click="execute(result)"
                 >
+                  <span
+                    v-if="indexOf(result) === activeIndex"
+                    class="absolute left-1.5 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent"
+                    aria-hidden="true"
+                  />
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-[13px] font-medium">{{ result.label }}</span>
                     <span
@@ -152,18 +157,18 @@ function onKeydown(event: KeyboardEvent) {
 
             <!-- 底部提示条。 -->
             <div
-              class="flex h-8 shrink-0 items-center justify-end gap-3 border-t border-line/35 bg-bg/55 px-4 text-[10px] text-muted/65"
+              class="flex h-8 shrink-0 items-center justify-end gap-3 border-t border-line/60 bg-bg/60 px-4 text-[10px] text-muted/70"
             >
               <span class="flex items-center gap-1">
-                <kbd class="rounded border border-line/60 bg-panel-strong px-1 text-[9px]">↑↓</kbd>
+                <kbd class="rounded-vt-sm border border-line bg-panel px-1 text-[9px]">↑↓</kbd>
                 {{ t('commandPalette.hint.navigate') }}
               </span>
               <span class="flex items-center gap-1">
-                <kbd class="rounded border border-line/60 bg-panel-strong px-1 text-[9px]">↵</kbd>
+                <kbd class="rounded-vt-sm border border-line bg-panel px-1 text-[9px]">↵</kbd>
                 {{ t('commandPalette.hint.open') }}
               </span>
               <span class="flex items-center gap-1">
-                <kbd class="rounded border border-line/60 bg-panel-strong px-1 text-[9px]">Esc</kbd>
+                <kbd class="rounded-vt-sm border border-line bg-panel px-1 text-[9px]">Esc</kbd>
                 {{ t('commandPalette.hint.close') }}
               </span>
             </div>

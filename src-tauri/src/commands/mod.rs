@@ -27,8 +27,8 @@ pub use first_run_import::{
     preview_first_run_import, reset_first_run_import_status,
 };
 pub use imports::{
-    apply_repository_import, import_github_repo_skills, preview_github_repo_import,
-    preview_repository_import,
+    apply_repository_import, import_github_repo_skills, import_local_skills,
+    preview_github_repo_import, preview_local_skill_import, preview_repository_import,
 };
 pub use project_import::import_project_from_git;
 pub use projects::{

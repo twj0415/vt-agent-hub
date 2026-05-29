@@ -23,11 +23,11 @@ function confirmResetAppData() {
 <template>
   <div class="grid gap-4">
     <BindingMatrix :rows="settingsStore.truthSourceRows" />
-    <section class="rounded-[16px] border border-danger/25 bg-danger/5 p-4">
+    <section class="rounded-vt-md border border-danger/30 bg-danger/8 p-4">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div class="min-w-0">
-          <div class="text-sm font-semibold text-text">{{ t('ui.common.resetAppData') }}</div>
-          <div class="mt-1 max-w-3xl text-sm leading-6 text-muted">
+          <div class="text-[13px] font-semibold text-text">{{ t('ui.common.resetAppData') }}</div>
+          <div class="mt-1 max-w-3xl text-[13px] leading-6 text-muted">
             {{ t('ui.common.confirmResetAppData') }}
           </div>
         </div>

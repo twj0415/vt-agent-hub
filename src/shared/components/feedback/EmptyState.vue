@@ -38,52 +38,57 @@ const actionText = computed(() => (props.actionLabel ? t(props.actionLabel) : ''
   <div
     class="flex flex-col items-center justify-center gap-3 text-center text-muted"
     :class="[
-      size === 'sm' ? 'p-5' : 'p-10',
-      fill ? 'h-full min-h-[280px] w-full flex-1 self-stretch' : '',
+      size === 'sm' ? 'p-5' : 'p-8',
+      fill ? 'h-full min-h-[240px] w-full flex-1 self-stretch' : '',
     ]"
   >
-    <svg
-      :width="iconSize"
-      :height="iconSize"
-      viewBox="0 0 48 48"
-      fill="none"
-      class="text-muted/40"
-      aria-hidden="true"
+    <div
+      class="relative grid place-items-center rounded-vt-lg border border-line/60 bg-surface-2/40"
+      :style="{ width: `${iconSize + 16}px`, height: `${iconSize + 16}px` }"
     >
-      <rect
-        x="8"
-        y="14"
-        width="32"
-        height="26"
-        rx="3"
-        stroke="currentColor"
-        stroke-width="1.5"
-      />
-      <path
-        d="M16 8h16l4 6H12l4-6z"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linejoin="round"
-      />
-      <line
-        x1="16"
-        y1="26"
-        x2="32"
-        y2="26"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-dasharray="3 3"
-      />
-    </svg>
+      <svg
+        :width="iconSize"
+        :height="iconSize"
+        viewBox="0 0 48 48"
+        fill="none"
+        class="text-muted/30"
+        aria-hidden="true"
+      >
+        <rect
+          x="8"
+          y="14"
+          width="32"
+          height="26"
+          rx="3"
+          stroke="currentColor"
+          stroke-width="1.25"
+        />
+        <path
+          d="M16 8h16l4 6H12l4-6z"
+          stroke="currentColor"
+          stroke-width="1.25"
+          stroke-linejoin="round"
+        />
+        <line
+          x1="16"
+          y1="26"
+          x2="32"
+          y2="26"
+          stroke="currentColor"
+          stroke-width="1.25"
+          stroke-linecap="round"
+          stroke-dasharray="3 3"
+        />
+      </svg>
+    </div>
 
-    <div v-if="titleText" class="text-[15px] font-semibold tracking-[-0.005em] text-text">
+    <div v-if="titleText" class="text-[14px] font-semibold tracking-[-0.005em] text-text">
       {{ titleText }}
     </div>
 
     <div
-      class="max-w-[360px] text-[13px] leading-relaxed text-muted/85"
-      :class="size === 'sm' ? 'text-[12px]' : ''"
+      class="max-w-[360px] text-[12px] leading-relaxed text-muted/80"
+      :class="size === 'sm' ? 'text-[11px]' : ''"
     >
       {{ descriptionText }}
     </div>

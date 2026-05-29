@@ -41,24 +41,27 @@
 
 <template>
   <article
-    class="tool-card group relative overflow-hidden rounded-[16px] border border-line/60 bg-panel-strong/92 p-4 shadow-surface transition-colors duration-normal ease-standard"
-    :class="item.enabled ? 'cursor-pointer hover:border-line-strong/60 hover:bg-panel-strong' : 'cursor-not-allowed opacity-60 grayscale-[0.35]'"
+    class="vt-card tool-card group overflow-hidden p-4"
+    :class="item.enabled ? 'vt-card-hover cursor-pointer' : 'cursor-not-allowed opacity-60 grayscale-[0.35]'"
     @click="item.enabled && emit('open', item.id)"
   >
     <span
-      class="pointer-events-none absolute bottom-3 left-0 top-3 w-[3px] rounded-r-full opacity-75"
-      :class="item.enabled ? 'bg-accent' : 'bg-muted/70'"
+      class="vt-accent-bar opacity-75"
+      :class="item.enabled ? '' : '!bg-muted/60'"
       aria-hidden="true"
     />
     <div class="flex items-start gap-4">
-      <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] border border-line/45 bg-text/[0.04]">
+      <div
+        class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-vt-md border border-line bg-surface-2/60 transition-shadow duration-normal ease-standard"
+        :class="item.enabled ? 'group-hover:vt-ring-accent group-hover:shadow-glow-accent-soft' : ''"
+      >
         <img
           v-if="tool?.iconSrc"
           :src="tool.iconSrc"
           :alt="item.name"
-          class="h-10 w-10 object-contain"
+          class="h-8 w-8 object-contain"
         />
-        <span v-else class="text-[14px] font-bold tracking-[0.04em] text-text/85">
+        <span v-else class="text-[13px] font-bold tracking-[0.04em] text-text/85">
           {{ tool?.iconText ?? '?' }}
         </span>
       </div>
@@ -67,7 +70,7 @@
         <div class="flex min-w-0 items-start justify-between gap-3">
           <div class="min-w-0">
             <h3
-              class="truncate text-[15px] font-semibold tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
+              class="truncate text-[14px] font-semibold tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
             >
               {{ item.name }}
             </h3>
@@ -79,13 +82,13 @@
 
         <p
           v-if="item.path"
-          class="mt-2 truncate font-mono text-[11px] leading-4 text-muted/62"
+          class="mt-2 truncate font-mono text-[11px] leading-4 text-muted/65"
           :title="item.path"
         >
           {{ item.path }}
         </p>
 
-        <div class="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-none">
+        <div class="mt-2.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-none">
           <span v-if="item.version" class="inline-flex items-baseline gap-1">
             <span class="font-medium text-muted/65">{{ t('ui.common.version') }}</span>
             <span class="font-semibold text-text/72">{{ item.version }}</span>

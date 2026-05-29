@@ -7,8 +7,10 @@ const props = withDefaults(defineProps<{
   tone?: BadgeTone
   label?: string
   labelKey?: string
+  variant?: 'dot' | 'tag'
 }>(), {
   tone: 'neutral',
+  variant: 'dot',
 })
 
 const { t } = useI18n()
@@ -18,31 +20,56 @@ const text = computed(() => {
   return props.label ?? ''
 })
 
-const toneClass = computed(() => {
+const dotColorClass = computed(() => {
   switch (props.tone) {
     case 'ready':
-      return 'bg-success/10 text-success border-success/25'
+      return 'vt-status-success'
     case 'warning':
-      return 'bg-warning/10 text-warning border-warning/25'
+      return 'vt-status-warning'
     case 'error':
-      return 'bg-danger/10 text-danger border-danger/25'
+      return 'vt-status-danger'
     case 'info':
-      return 'bg-text/[0.06] text-text/80 border-text/10'
     case 'active':
-      return 'bg-accent/10 text-accent border-accent/22'
+      return 'vt-status-info'
     case 'planned':
     case 'neutral':
     default:
-      return 'bg-text/[0.06] text-muted border-text/10'
+      return 'vt-status-muted'
+  }
+})
+
+const tagToneClass = computed(() => {
+  switch (props.tone) {
+    case 'ready':
+      return 'vt-tag-success'
+    case 'warning':
+      return 'vt-tag-warning'
+    case 'error':
+      return 'vt-tag-danger'
+    case 'info':
+    case 'active':
+      return 'vt-tag-accent'
+    case 'planned':
+    case 'neutral':
+    default:
+      return ''
   }
 })
 </script>
 
 <template>
   <span
-    class="inline-flex h-[20px] items-center rounded-[6px] border px-1.5 text-[11px] font-medium leading-none align-middle"
-    :class="toneClass"
+    v-if="variant === 'tag'"
+    class="vt-tag align-middle"
+    :class="tagToneClass"
   >
+    {{ text }}
+  </span>
+  <span
+    v-else
+    class="inline-flex items-center gap-1.5 align-middle text-[11px] font-medium leading-none text-muted"
+  >
+    <span class="vt-status-dot" :class="dotColorClass" />
     {{ text }}
   </span>
 </template>

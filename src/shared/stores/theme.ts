@@ -1,20 +1,21 @@
 import { defineStore } from 'pinia'
 import { storageKeys } from '@/shared/constants/storage'
 
-export type ThemePreset = 'apple' | 'warm' | 'clean' | 'dark'
+export type ThemePreset = 'apple' | 'warm' | 'graphite' | 'dark'
 
 export const themePresets = [
   { value: 'apple', labelKey: 'theme.preset.apple' },
   { value: 'warm', labelKey: 'theme.preset.warm' },
-  { value: 'clean', labelKey: 'theme.preset.clean' },
+  { value: 'graphite', labelKey: 'theme.preset.graphite' },
   { value: 'dark', labelKey: 'theme.preset.dark' },
 ] as const
 
 export function isThemePreset(value: string | null): value is ThemePreset {
-  return value === 'warm' || value === 'clean' || value === 'apple' || value === 'dark'
+  return value === 'warm' || value === 'graphite' || value === 'apple' || value === 'dark'
 }
 
 function normalizeThemePreset(value: string | null): ThemePreset {
+  if (value === 'clean') return 'graphite'
   if (isThemePreset(value)) return value
   return 'apple'
 }

@@ -24,16 +24,16 @@
 </script>
 
 <template>
-  <header class="flex h-9 shrink-0 items-center border-b border-line/35 bg-panel/72 backdrop-blur-xl backdrop-saturate-150">
+  <header class="topbar-shell flex h-8 shrink-0 items-center border-b border-line/60 bg-bg/92 backdrop-blur-xl backdrop-saturate-150">
     <div data-tauri-drag-region class="flex h-full min-w-0 flex-1 items-center self-stretch">
       <div data-tauri-drag-region class="ml-3 flex min-w-0 items-center gap-2">
         <img
           data-tauri-drag-region
           :src="appIcon"
           :alt="t('app.name')"
-          class="h-[18px] w-[18px] shrink-0 rounded-[5px] object-contain shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
+          class="h-4 w-4 shrink-0 rounded-[5px] object-contain"
         />
-        <span data-tauri-drag-region class="truncate text-[12px] font-semibold tracking-[-0.01em] text-text/75">
+        <span data-tauri-drag-region class="vt-brand-gradient truncate text-[12px] font-semibold tracking-[-0.01em]">
           {{ t('app.name') }}
         </span>
       </div>
@@ -76,19 +76,39 @@
 </template>
 
 <style scoped>
+.topbar-shell {
+  position: relative;
+}
+.topbar-shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(var(--vt-color-accent) / 0.18) 35%,
+    rgb(var(--vt-color-accent) / 0.12) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
 .win-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
-  width: 44px;
+  height: 32px;
+  width: 38px;
   padding: 0;
   border: none;
   background: transparent;
   color: rgb(var(--vt-color-muted));
-  font-size: 11px;
+  font-size: 10px;
   outline: none;
-  transition: background-color 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 .win-btn:hover {
@@ -97,7 +117,7 @@
 }
 
 .win-btn-close:hover {
-  background: rgb(var(--vt-color-danger) / 0.15);
+  background: rgb(var(--vt-color-danger) / 0.18);
   color: rgb(var(--vt-color-danger));
 }
 </style>

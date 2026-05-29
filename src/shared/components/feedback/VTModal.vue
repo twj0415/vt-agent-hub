@@ -53,26 +53,33 @@
 <style>
 /* 全局：macOS Sheet 风半透 backdrop。 */
 .app-modal-wrap .ant-modal-mask {
-  backdrop-filter: blur(10px) saturate(130%);
-  background: rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px) saturate(140%);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.app-modal .ant-modal-content {
+  border-radius: var(--vt-radius-lg);
+  border: 1px solid rgb(var(--vt-color-line));
 }
 
 .app-modal .ant-modal-header {
-  border-bottom: 1px solid rgb(var(--vt-color-line) / 0.35);
+  border-bottom: 1px solid rgb(var(--vt-color-line) / 0.55);
   padding-bottom: 14px;
   margin-bottom: 0;
 }
 
 .app-modal .ant-modal-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.005em;
 }
 
 .app-modal .ant-modal-footer {
-  border-top: 1px solid rgb(var(--vt-color-line) / 0.35);
+  border-top: 1px solid rgb(var(--vt-color-line) / 0.55);
   padding-top: 14px;
   margin-top: 0;
+  background: rgb(var(--vt-color-panel) / 0.6);
+  backdrop-filter: blur(10px);
 }
 
 .vt-modal-footer-actions {

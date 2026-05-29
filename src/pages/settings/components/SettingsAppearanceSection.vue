@@ -26,14 +26,14 @@ const themeOptions = computed(() =>
 <template>
   <div class="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
     <section>
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.theme') }}</div>
-      <div class="mt-3 max-h-[360px] overflow-y-auto rounded-[16px] border border-line/60 bg-panel/60 p-2">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.theme') }}</div>
+      <div class="mt-3 max-h-[360px] overflow-y-auto rounded-vt-md border border-line bg-surface-2/40 p-1.5">
         <button
           v-for="item in themeOptions"
           :key="item.value"
           type="button"
-          class="group flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-colors duration-normal ease-standard hover:bg-text/[0.055]"
-          :class="settingsStore.themePreset === item.value ? 'bg-accent/[0.09]' : ''"
+          class="theme-option group flex w-full items-center gap-3 rounded-vt-md px-3 py-2.5 text-left transition-all duration-fast ease-standard hover:bg-text/[0.05]"
+          :class="settingsStore.themePreset === item.value ? 'theme-option-active' : ''"
           @click="settingsStore.setThemePreset(item.value)"
         >
           <span class="theme-swatch" :data-theme-preview="item.value" aria-hidden="true">
@@ -42,8 +42,8 @@ const themeOptions = computed(() =>
             <span />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-semibold text-text">{{ item.title }}</span>
-            <span class="mt-0.5 block truncate text-xs leading-5 text-muted/80">{{ item.description }}</span>
+            <span class="block truncate text-[13px] font-semibold text-text">{{ item.title }}</span>
+            <span class="mt-0.5 block truncate text-[11px] leading-5 text-muted/80">{{ item.description }}</span>
           </span>
           <CheckOutlined
             class="shrink-0 text-[13px] text-accent transition-opacity"
@@ -54,17 +54,17 @@ const themeOptions = computed(() =>
     </section>
 
     <section>
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.language') }}</div>
-      <div class="mt-3 grid gap-2 rounded-[16px] border border-line/60 bg-panel/60 p-2">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.language') }}</div>
+      <div class="mt-3 grid gap-1.5 rounded-vt-md border border-line bg-surface-2/40 p-1.5">
         <button
           v-for="item in localeOptions"
           :key="item.value"
           type="button"
-          class="flex items-center justify-between rounded-[12px] px-3 py-2.5 text-left transition-colors duration-normal ease-standard hover:bg-text/[0.055]"
-          :class="settingsStore.localeCode === item.value ? 'bg-accent/[0.09]' : ''"
+          class="theme-option flex items-center justify-between rounded-vt-md px-3 py-2.5 text-left transition-all duration-fast ease-standard hover:bg-text/[0.05]"
+          :class="settingsStore.localeCode === item.value ? 'theme-option-active' : ''"
           @click="settingsStore.setLocaleCode(item.value)"
         >
-          <span class="block text-sm font-semibold text-text">{{ item.title }}</span>
+          <span class="block text-[13px] font-semibold text-text">{{ item.title }}</span>
           <CheckOutlined
             class="shrink-0 text-[13px] text-accent transition-opacity"
             :class="settingsStore.localeCode === item.value ? 'opacity-100' : 'opacity-0'"
@@ -76,6 +76,11 @@ const themeOptions = computed(() =>
 </template>
 
 <style scoped>
+.theme-option-active {
+  background: rgb(var(--vt-color-accent) / 0.10);
+  box-shadow: inset 0 0 0 1px rgb(var(--vt-color-accent) / 0.18);
+}
+
 .theme-swatch {
   display: grid;
   width: 42px;
@@ -93,19 +98,19 @@ const themeOptions = computed(() =>
   grid-row: span 2;
 }
 
-.theme-swatch[data-theme-preview='apple'] span:first-child { background: #f5f5f7; }
-.theme-swatch[data-theme-preview='apple'] span:nth-child(2) { background: #ffffff; }
-.theme-swatch[data-theme-preview='apple'] span:nth-child(3) { background: #0066cc; }
+.theme-swatch[data-theme-preview='apple'] span:first-child { background: #FAFAFA; }
+.theme-swatch[data-theme-preview='apple'] span:nth-child(2) { background: #FFFFFF; }
+.theme-swatch[data-theme-preview='apple'] span:nth-child(3) { background: #2563EB; }
 
-.theme-swatch[data-theme-preview='warm'] span:first-child { background: #f4efe7; }
-.theme-swatch[data-theme-preview='warm'] span:nth-child(2) { background: #fffdf8; }
-.theme-swatch[data-theme-preview='warm'] span:nth-child(3) { background: #c8612d; }
+.theme-swatch[data-theme-preview='warm'] span:first-child { background: #F8F5EF; }
+.theme-swatch[data-theme-preview='warm'] span:nth-child(2) { background: #FFFDF8; }
+.theme-swatch[data-theme-preview='warm'] span:nth-child(3) { background: #B45309; }
 
-.theme-swatch[data-theme-preview='clean'] span:first-child { background: #f5f5f7; }
-.theme-swatch[data-theme-preview='clean'] span:nth-child(2) { background: #fbfbfd; }
-.theme-swatch[data-theme-preview='clean'] span:nth-child(3) { background: #0071e3; }
+.theme-swatch[data-theme-preview='graphite'] span:first-child { background: #18181B; }
+.theme-swatch[data-theme-preview='graphite'] span:nth-child(2) { background: #1F1F23; }
+.theme-swatch[data-theme-preview='graphite'] span:nth-child(3) { background: #10B981; }
 
-.theme-swatch[data-theme-preview='dark'] span:first-child { background: #0c0d12; }
-.theme-swatch[data-theme-preview='dark'] span:nth-child(2) { background: #181922; }
-.theme-swatch[data-theme-preview='dark'] span:nth-child(3) { background: #768eff; }
+.theme-swatch[data-theme-preview='dark'] span:first-child { background: #0A0A0F; }
+.theme-swatch[data-theme-preview='dark'] span:nth-child(2) { background: #12131A; }
+.theme-swatch[data-theme-preview='dark'] span:nth-child(3) { background: #3B82F6; }
 </style>

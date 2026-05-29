@@ -43,6 +43,8 @@ import type {
   GitHubRepoImportResult,
   GitHubRepoPreview,
   GitHubSkillImportSelection,
+  LocalSkillsImportResult,
+  LocalSkillsPreview,
 } from './client'
 
 export function getAppBootstrap() {
@@ -354,6 +356,14 @@ export function previewGitHubRepoImport(repoUrl: string) {
 
 export function importGitHubRepoSkills(repoUrl: string, selections: GitHubSkillImportSelection[]) {
   return invoke<AppResponse<GitHubRepoImportResult>>('import_github_repo_skills', { repoUrl, selections })
+}
+
+export function previewLocalSkillImport(path: string) {
+  return invoke<AppResponse<LocalSkillsPreview>>('preview_local_skill_import', { path })
+}
+
+export function importLocalSkills(path: string, selections: GitHubSkillImportSelection[]) {
+  return invoke<AppResponse<LocalSkillsImportResult>>('import_local_skills', { path, selections })
 }
 
 export function pickFolderPath() {

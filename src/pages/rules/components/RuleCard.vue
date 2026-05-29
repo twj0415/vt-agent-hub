@@ -32,12 +32,12 @@
 
 <template>
   <article
-    class="rule-row group relative cursor-pointer px-4 py-4 transition-colors duration-fast ease-standard hover:bg-text/[0.04]"
+    class="rule-row vt-row-hover group relative cursor-pointer px-4 py-3.5 transition-colors duration-fast ease-standard"
     data-rule-card
     @click="openRuleDetail(item.id)"
   >
     <span
-      class="pointer-events-none absolute bottom-3 left-0 top-3 w-[3px] rounded-r-full opacity-75"
+      class="vt-accent-bar opacity-75"
       :style="{ background: categoryColor }"
       aria-hidden="true"
     />
@@ -46,7 +46,7 @@
         data-drag-handle
         data-no-detail
         type="button"
-        class="flex h-8 w-8 cursor-grab items-center justify-center rounded-[10px] border border-transparent bg-text/[0.035] text-muted/65 transition-colors duration-fast ease-standard hover:border-line/55 hover:bg-text/[0.055] hover:text-text active:cursor-grabbing"
+        class="flex h-8 w-8 cursor-grab items-center justify-center rounded-vt-md border border-transparent bg-surface-2/60 text-muted/65 transition-colors duration-fast ease-standard hover:border-line-strong/55 hover:bg-surface-2 hover:text-text active:cursor-grabbing"
         title="拖动绑定到项目"
         @click.stop
       >
@@ -56,23 +56,23 @@
       <div class="min-w-0">
         <div class="flex min-w-0 items-center gap-2">
           <h3
-            class="min-w-0 truncate text-[14px] font-semibold leading-snug tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
+            class="min-w-0 truncate text-[13px] font-semibold leading-snug tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
           >
             {{ item.name }}
           </h3>
-          <span class="shrink-0 text-[11px] font-medium leading-4 text-muted/72">
+          <span class="vt-tag">
             {{ item.categoryLabel }}
           </span>
         </div>
 
         <p
           v-if="item.summaryText || item.bodyText"
-          class="mt-1.5 line-clamp-2 max-w-4xl text-[12px] leading-5 text-muted/85"
+          class="mt-1 line-clamp-2 max-w-4xl text-[12px] leading-5 text-muted/85"
         >
           {{ item.summaryText || item.bodyText }}
         </p>
 
-        <div data-rule-meta class="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-none">
+        <div data-rule-meta class="mt-2.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-none">
           <span class="inline-flex items-baseline gap-1" :title="item.projectTitle">
             <span class="font-medium text-muted/65">{{ t('ui.common.projects') }}</span>
             <span class="font-semibold text-text/82">{{ item.projectTags.length }}</span>

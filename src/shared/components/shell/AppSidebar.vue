@@ -44,12 +44,12 @@
 </script>
 
 <template>
-  <aside class="flex h-full w-[216px] shrink-0 flex-col border-r border-line/35 bg-bg/88 backdrop-blur-xl backdrop-saturate-150">
+  <aside class="sidebar-shell flex h-full w-[208px] shrink-0 flex-col border-r border-line/60 bg-bg/90 backdrop-blur-xl backdrop-saturate-150">
     <div data-tauri-drag-region class="h-3 shrink-0" />
 
-    <nav class="flex-1 overflow-y-auto px-3 pb-3">
+    <nav class="flex-1 overflow-y-auto px-2.5 pb-3">
       <div v-for="(group, gi) in navGroups" :key="gi" :class="gi > 0 ? 'mt-5' : 'mt-1'">
-        <div class="mb-1 px-2.5 text-[11px] font-medium leading-5 text-muted/55">
+        <div class="mb-1.5 px-3 text-[10px] font-semibold uppercase leading-4 tracking-[0.10em] text-muted/55">
           {{ t(group.titleKey) }}
         </div>
 
@@ -57,32 +57,66 @@
           v-for="item in group.items"
           :key="item.key"
           :to="item.to"
-          class="relative flex h-8 items-center rounded-[9px] px-3 text-[13px] tracking-[-0.008em] transition-colors duration-fast ease-standard"
+          class="nav-item group relative mb-0.5 flex h-8 items-center rounded-vt-md pl-3 pr-3 text-[13px] tracking-[-0.008em] transition-all duration-fast ease-standard"
           :class="
             currentKey === item.key
-              ? 'bg-text/[0.075] font-semibold text-text shadow-[inset_0_0_0_0.5px_rgb(var(--vt-color-line)/0.55)] before:absolute before:left-1.5 before:top-2 before:h-4 before:w-[3px] before:rounded-full before:bg-accent'
-              : 'font-medium text-muted hover:bg-text/[0.045] hover:text-text'
+              ? 'nav-item-active font-semibold text-text'
+              : 'font-medium text-muted hover:bg-text/[0.04] hover:text-text'
           "
         >
+          <span
+            v-if="currentKey === item.key"
+            class="absolute left-1 top-1/2 h-3.5 w-[2px] -translate-y-1/2 rounded-full bg-accent"
+            aria-hidden="true"
+          />
           {{ t(item.labelKey) }}
         </RouterLink>
       </div>
     </nav>
 
-    <div class="border-t border-line/35 px-3 pb-3 pt-2">
+    <div class="border-t border-line/45 px-2.5 pb-3 pt-2">
       <RouterLink
         v-for="item in footerItems"
         :key="item.key"
         :to="item.to"
-        class="relative flex h-8 items-center rounded-[9px] px-3 text-[13px] tracking-[-0.008em] transition-colors duration-fast ease-standard"
+        class="nav-item group relative flex h-8 items-center rounded-vt-md pl-3 pr-3 text-[13px] tracking-[-0.008em] transition-all duration-fast ease-standard"
         :class="
           currentKey === item.key
-            ? 'bg-text/[0.08] font-semibold text-text shadow-[inset_0_1px_0_rgb(255_255_255/0.18)] before:absolute before:left-1 before:top-1.5 before:h-4 before:w-[3px] before:rounded-full before:bg-accent'
+            ? 'nav-item-active font-semibold text-text'
             : 'font-medium text-muted hover:bg-text/[0.04] hover:text-text'
         "
       >
+        <span
+          v-if="currentKey === item.key"
+          class="absolute left-1 top-1/2 h-3.5 w-[2px] -translate-y-1/2 rounded-full bg-accent"
+          aria-hidden="true"
+        />
         {{ t(item.labelKey) }}
       </RouterLink>
     </div>
   </aside>
 </template>
+
+<style scoped>
+.sidebar-shell {
+  position: relative;
+}
+
+.nav-item-active {
+  background: rgb(var(--vt-color-accent) / 0.10);
+  box-shadow: inset 0 0 0 1px rgb(var(--vt-color-accent) / 0.18);
+}
+
+.nav-item-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--vt-color-accent) / 0.06) 0%,
+    transparent 60%
+  );
+}
+</style>

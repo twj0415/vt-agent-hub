@@ -40,22 +40,22 @@
 
 <template>
   <article
-    class="provider-row group relative grid cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-fast ease-standard md:grid-cols-[40px_minmax(0,1fr)_auto] md:items-center"
-    :class="item.active ? 'bg-accent/[0.055]' : 'hover:bg-text/[0.04]'"
+    class="provider-row group relative grid cursor-pointer gap-3 px-4 py-3 transition-colors duration-fast ease-standard md:grid-cols-[40px_minmax(0,1fr)_auto] md:items-center"
+    :class="item.active ? 'bg-accent/[0.06]' : 'vt-row-hover'"
     @click="emit('edit', { providerId: item.providerId, configId: item.configId })"
   >
     <span
       v-if="item.active"
-      class="pointer-events-none absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full bg-accent opacity-75"
+      class="vt-accent-bar"
       aria-hidden="true"
     />
 
     <div
-      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-[14px] font-semibold tracking-tight transition-colors"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-vt-md text-[14px] font-semibold tracking-tight transition-colors"
       :class="
         item.active
-          ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
-          : 'bg-text/[0.055] text-text/85'
+          ? 'bg-accent/12 text-accent ring-1 ring-accent/25'
+          : 'bg-surface-2/60 text-text/85 border border-line/40'
       "
     >
       {{ initial }}
@@ -64,19 +64,23 @@
     <div class="min-w-0">
       <div class="flex min-w-0 flex-wrap items-center gap-2">
         <h3
-          class="min-w-0 truncate text-[14px] tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
+          class="min-w-0 truncate text-[13px] tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
           :class="item.active ? 'font-bold' : 'font-semibold'"
         >
           {{ item.name }}
         </h3>
-        <span class="shrink-0 text-[11px] font-medium leading-4 text-muted/72">
+        <span class="vt-tag">
           {{ item.categoryLabel }}
+        </span>
+        <span v-if="item.active" class="inline-flex items-center gap-1.5 text-[11px] font-medium text-success">
+          <span class="vt-status-dot vt-status-success" />
+          {{ item.activeLabel }}
         </span>
       </div>
 
       <p
         v-if="item.baseUrl"
-        class="mt-1 truncate font-mono text-[11px] leading-4 text-muted/78"
+        class="mt-1 truncate font-mono text-[11px] leading-4 text-muted/75"
         :title="item.baseUrl"
       >
         {{ item.baseUrl }}
@@ -95,9 +99,6 @@
     </div>
 
     <div class="flex shrink-0 items-center justify-end gap-2" data-no-drag @click.stop>
-      <span v-if="item.active" class="hidden text-[11px] font-medium text-accent md:inline">
-        {{ item.activeLabel }}
-      </span>
       <div class="flex items-center gap-1">
         <a-button
           v-if="!item.active"

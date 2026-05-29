@@ -188,10 +188,10 @@ fn parse_claude_provider_config(content: &str) -> Result<ProviderConfigImport, S
         "vertex" => "Claude Vertex".to_string(),
         _ => "Claude".to_string(),
     };
-    let category = if provider_kind == "anthropic" {
-        "official"
-    } else {
-        "custom_gateway"
+    let category = match provider_kind {
+        "anthropic" => "official",
+        "bedrock" | "vertex" => "cloud_provider",
+        _ => "third_party",
     }
     .to_string();
     let api_key = json_env_string(&root, "ANTHROPIC_API_KEY");
@@ -206,15 +206,15 @@ fn parse_claude_provider_config(content: &str) -> Result<ProviderConfigImport, S
     let credential_detected = credential_token.is_some();
 
     Ok(ProviderConfigImport {
-        provider_name: provider_name.clone(),
-        category,
-        display_name: provider_name,
+        provider_name,
+        category: category.clone(),
         model,
         reasoning: "medium".to_string(),
         base_url: resolved_base_url,
         credential_token,
         config_json: json!({
             "providerKind": provider_kind,
+            "category": category,
             "smallFastModel": small_fast_model,
             "awsRegion": aws_region,
             "awsProfile": aws_profile,

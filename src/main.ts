@@ -11,7 +11,7 @@ function showFatalError(error: unknown) {
   const message = error instanceof Error ? error.stack || error.message : String(error)
   const target = document.querySelector('#app')
   if (!target) return
-  target.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><pre style="max-width:960px;white-space:pre-wrap;border:1px solid #ddd;border-radius:16px;background:white;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.08);">${escapeHtml(message)}</pre></div>`
+  target.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--vt-bootstrap-bg, #fafafa);color:var(--vt-bootstrap-fg, #52525b);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><pre style="max-width:960px;white-space:pre-wrap;border:1px solid rgba(127,127,127,.2);border-radius:12px;background:transparent;padding:18px;">${escapeHtml(message)}</pre></div>`
 }
 
 window.addEventListener('error', (event) => showFatalError(event.error ?? event.message))

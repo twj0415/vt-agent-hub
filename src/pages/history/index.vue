@@ -33,20 +33,20 @@ const {
       </a-button>
     </PageHeader>
 
-    <section class="rounded-[20px] border border-line/60 bg-panel-strong/88 p-5 shadow-surface">
+    <section class="vt-card p-5">
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="row in summaryRows"
           :key="row.label"
-          class="rounded-[16px] border border-line/60 bg-panel/60 p-4"
+          class="rounded-vt-md border border-line bg-surface-2/40 p-4"
         >
-          <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted/85">{{ row.label }}</div>
+          <div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/80">{{ row.label }}</div>
           <div class="mt-3 text-2xl font-semibold text-text">{{ row.value }}</div>
         </div>
       </div>
     </section>
 
-    <section class="rounded-[20px] border border-line/60 bg-panel-strong/88 p-3 shadow-surface">
+    <section class="vt-card p-3">
       <a-segmented
         v-model:value="activeTab"
         block
@@ -99,7 +99,7 @@ const {
         <div
           v-for="item in historyStore.filteredItems"
           :key="item.id"
-          class="rounded-[16px] border border-line/60 bg-panel/70 p-4 shadow-surface"
+          class="vt-card vt-card-hover p-4"
           role="button"
           tabindex="0"
           @click="historyStore.openHistoryDetail(item.id)"
@@ -135,7 +135,7 @@ const {
         <div
           v-for="item in historyStore.backupEntries"
           :key="item.id"
-          class="rounded-[16px] border border-line/60 bg-panel/70 p-4 shadow-surface"
+          class="vt-card p-4"
         >
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -197,7 +197,7 @@ const {
             { label: t('pages.history.detail.target'), value: historyStore.activeItem.navigationTarget || '-' },
           ]"
         />
-        <div class="rounded-[16px] border border-line/60 bg-panel-strong/92 p-4 text-sm leading-6 text-muted shadow-surface">
+        <div class="vt-card vt-card-strong p-4 text-[13px] leading-6 text-muted">
           {{ historyStore.activeItem.detail }}
         </div>
       </div>
@@ -217,7 +217,7 @@ const {
             { label: t('pages.history.detail.targetExists'), value: historyStore.restorePreview.targetExists ? t('common.yes') : t('common.no') },
           ]"
         />
-        <div v-if="historyStore.restorePreview.warning" class="rounded-[16px] bg-panel/65 p-4 text-sm leading-6 text-muted">
+        <div v-if="historyStore.restorePreview.warning" class="rounded-vt-md border border-warning/30 bg-warning/8 p-4 text-[13px] leading-6 text-muted">
           {{ historyStore.restorePreview.warning }}
         </div>
         <DiffViewer

@@ -144,12 +144,53 @@ impl ProviderRuntimeService {
             "vertex" => "Claude Vertex".to_string(),
             _ => "Claude".to_string(),
         };
-        let category = if provider_kind == "anthropic" {
-            "official"
-        } else {
-            "custom_gateway"
+        let category = match provider_kind {
+            "anthropic" => "official",
+            "bedrock" | "vertex" => "cloud_provider",
+            _ => "third_party",
         }
         .to_string();
+
+        // 反向解析模型映射
+        let opus_model = Self::json_env_string(&root, "ANTHROPIC_DEFAULT_OPUS_MODEL");
+        let sonnet_model = Self::json_env_string(&root, "ANTHROPIC_DEFAULT_SONNET_MODEL");
+        let haiku_model = Self::json_env_string(&root, "ANTHROPIC_DEFAULT_HAIKU_MODEL");
+        let model_mapping = json!({
+            "opus": opus_model,
+            "sonnet": sonnet_model,
+            "haiku": haiku_model,
+            "smallFast": small_fast_model,
+        });
+
+        // 反向解析开关字段
+        let switches = json!({
+            "disableNonessentialTraffic": Self::json_env_truthy(&root, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"),
+            "attributionHeader": Self::json_env_truthy(&root, "CLAUDE_CODE_ATTRIBUTION_HEADER"),
+            "disableTelemetry": Self::json_env_truthy(&root, "DISABLE_TELEMETRY"),
+            "disableNonEssentialModelCalls": Self::json_env_truthy(&root, "DISABLE_NON_ESSENTIAL_MODEL_CALLS"),
+            "disableAutoupdater": Self::json_env_truthy(&root, "DISABLE_AUTOUPDATER"),
+            "disableErrorReporting": Self::json_env_truthy(&root, "DISABLE_ERROR_REPORTING"),
+            "claudeCodeBeta": Self::json_env_truthy(&root, "CLAUDE_CODE_BETA"),
+        });
+
+        // 反向解析数值字段
+        let numbers = json!({
+            "apiTimeoutMs": Self::json_env_string(&root, "API_TIMEOUT_MS"),
+            "claudeCodeMaxOutputTokens": Self::json_env_string(&root, "CLAUDE_CODE_MAX_OUTPUT_TOKENS"),
+            "bashDefaultTimeoutMs": Self::json_env_string(&root, "BASH_DEFAULT_TIMEOUT_MS"),
+            "bashMaxTimeoutMs": Self::json_env_string(&root, "BASH_MAX_TIMEOUT_MS"),
+            "mcpTimeout": Self::json_env_string(&root, "MCP_TIMEOUT"),
+            "mcpToolTimeout": Self::json_env_string(&root, "MCP_TOOL_TIMEOUT"),
+        });
+
+        // 反向解析代理
+        let proxy = json!({
+            "httpsProxy": Self::json_env_string(&root, "HTTPS_PROXY"),
+            "httpProxy": Self::json_env_string(&root, "HTTP_PROXY"),
+        });
+
+        // 反向解析 extraEnv:env 里所有非受管理字段都进 extraEnv
+        let extra_env = Self::collect_unmanaged_env(env);
 
         Ok(ParsedClaudeSettings {
             provider_name,
@@ -162,6 +203,7 @@ impl ProviderRuntimeService {
             credential_token,
             config_json: json!({
                 "providerKind": provider_kind,
+                "category": category_from_kind(provider_kind),
                 "smallFastModel": small_fast_model,
                 "awsRegion": aws_region,
                 "awsProfile": aws_profile,
@@ -173,6 +215,11 @@ impl ProviderRuntimeService {
                 "credentialKey": credential_key,
                 "proxyDetected": env.is_some_and(|values| values.contains_key("HTTPS_PROXY") || values.contains_key("HTTP_PROXY")),
                 "liveApplySupported": true,
+                "modelMapping": model_mapping,
+                "switches": switches,
+                "numbers": numbers,
+                "proxy": proxy,
+                "extraEnv": extra_env,
             }),
         })
     }
@@ -206,6 +253,58 @@ impl ProviderRuntimeService {
             .unwrap_or(false)
     }
 
+    /// 用于 switches 反向解析:有值即为 true(包括 "1"/"true"/"yes"/"on"),其他都为 false。
+    /// 字段不存在时返回 false(对应 UI 上开关默认关闭)。
+    fn json_env_truthy(root: &Value, key: &str) -> bool {
+        Self::json_env_bool(root, key)
+    }
+
+    /// 把 env 里所有非受管理字段收集到 extraEnv 透传区。
+    fn collect_unmanaged_env(env: Option<&serde_json::Map<String, Value>>) -> Value {
+        const MANAGED: &[&str] = &[
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "ANTHROPIC_BASE_URL",
+            "ANTHROPIC_MODEL",
+            "ANTHROPIC_SMALL_FAST_MODEL",
+            "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+            "ANTHROPIC_DEFAULT_SONNET_MODEL",
+            "ANTHROPIC_DEFAULT_OPUS_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "CLAUDE_CODE_USE_VERTEX",
+            "AWS_REGION",
+            "AWS_PROFILE",
+            "GOOGLE_CLOUD_PROJECT",
+            "VERTEX_REGION",
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+            "CLAUDE_CODE_ATTRIBUTION_HEADER",
+            "DISABLE_TELEMETRY",
+            "DISABLE_NON_ESSENTIAL_MODEL_CALLS",
+            "DISABLE_AUTOUPDATER",
+            "DISABLE_ERROR_REPORTING",
+            "CLAUDE_CODE_BETA",
+            "API_TIMEOUT_MS",
+            "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
+            "BASH_DEFAULT_TIMEOUT_MS",
+            "BASH_MAX_TIMEOUT_MS",
+            "MCP_TIMEOUT",
+            "MCP_TOOL_TIMEOUT",
+            "HTTPS_PROXY",
+            "HTTP_PROXY",
+        ];
+        let Some(env) = env else {
+            return json!({});
+        };
+        let mut extra = serde_json::Map::new();
+        for (key, value) in env {
+            if MANAGED.contains(&key.as_str()) {
+                continue;
+            }
+            extra.insert(key.clone(), value.clone());
+        }
+        Value::Object(extra)
+    }
+
     fn is_official_anthropic_url(value: &str) -> bool {
         let normalized = value.trim().trim_end_matches('/').to_ascii_lowercase();
         normalized == "https://api.anthropic.com" || normalized == "https://api.anthropic.com/v1"
@@ -236,6 +335,15 @@ impl ProviderRuntimeService {
 
     fn table_i64(table: &toml::map::Map<String, TomlValue>, key: &str) -> Option<i64> {
         Self::value_i64(table, key)
+    }
+}
+
+/// 从 providerKind 推断 ProviderCategory(用于解析时初始化 config_json.category)。
+fn category_from_kind(kind: &str) -> &'static str {
+    match kind {
+        "anthropic" => "official",
+        "bedrock" | "vertex" => "cloud_provider",
+        _ => "third_party",
     }
 }
 

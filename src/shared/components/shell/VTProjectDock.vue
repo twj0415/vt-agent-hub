@@ -116,7 +116,8 @@ watch(dragState, (next) => {
     <button
       v-show="!dockExpanded"
       type="button"
-      class="pointer-events-auto group flex h-16 animate-pulse items-center rounded-l-full border border-r-0 border-accent/35 bg-accent/[0.16] shadow-[0_0_18px_rgb(var(--vt-color-accent)/0.16)] transition-all duration-slow ease-spring hover:h-20 hover:bg-accent/[0.22] hover:shadow-[0_0_26px_rgb(var(--vt-color-accent)/0.24)]"
+      class="dock-pill pointer-events-auto group flex h-16 items-center rounded-l-full border border-r-0 border-accent/40 bg-accent/[0.14] transition-all duration-slow ease-spring hover:h-20 hover:bg-accent/[0.22]"
+      :class="dragState ? 'is-dragging' : ''"
       :style="{ width: '8px' }"
       :title="t('dock.title')"
       :aria-label="t('dock.title')"
@@ -125,7 +126,7 @@ watch(dragState, (next) => {
       @click="expand"
     >
       <span
-        class="ml-[-22px] hidden h-5 min-w-[20px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-white shadow-[0_1px_2px_rgb(0_0_0/0.06)] group-hover:flex"
+        class="ml-[-22px] hidden h-5 min-w-[20px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-white shadow-glow-accent-soft group-hover:flex"
       >
         {{ total }}
       </span>
@@ -140,24 +141,25 @@ watch(dragState, (next) => {
     >
       <div
         v-if="dockExpanded"
-        class="pointer-events-auto flex flex-col overflow-hidden rounded-l-[18px] border border-r-0 border-line/55 bg-panel-strong/94 shadow-surface-lg"
-        :style="{ width: '268px', maxHeight: 'min(560px, 70vh)', backdropFilter: 'blur(20px) saturate(180%)' }"
+        class="pointer-events-auto flex flex-col overflow-hidden rounded-l-vt-lg border border-r-0 border-line bg-panel-strong/95 shadow-surface-lg"
+        :style="{ width: '268px', maxHeight: 'min(560px, 70vh)', backdropFilter: 'blur(22px) saturate(180%)' }"
         @dragover="onDockDragOver"
         @dragenter="onDockDragOver"
         @drop="onDockDrop"
       >
         <header
-          class="flex h-11 shrink-0 items-center justify-between border-b border-line/40 px-4"
+          class="flex h-10 shrink-0 items-center justify-between border-b border-line/60 px-4"
         >
           <div class="flex items-center gap-2">
+            <span class="vt-status-dot vt-status-info" />
             <span class="text-[13px] font-semibold tracking-[-0.005em] text-text">
               {{ t('dock.title') }}
             </span>
-            <span class="text-[11px] text-muted/70">{{ total }}</span>
+            <span class="vt-tag">{{ total }}</span>
           </div>
           <button
             type="button"
-            class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] text-muted transition-colors duration-normal ease-standard hover:bg-text/[0.06] hover:text-text"
+            class="flex h-6 w-6 items-center justify-center rounded-vt-sm text-[10px] text-muted transition-colors duration-fast ease-standard hover:bg-text/[0.06] hover:text-text"
             :aria-label="t('dock.closeAria')"
             @click="collapse"
           >
@@ -167,7 +169,7 @@ watch(dragState, (next) => {
           </button>
         </header>
 
-        <div v-if="dragState" class="shrink-0 animate-pulse border-b border-accent/20 bg-accent/[0.1] px-4 py-2 text-[11px] font-medium text-text/90">
+        <div v-if="dragState" class="shrink-0 border-b border-accent/30 bg-accent/[0.10] px-4 py-2 text-[11px] font-medium text-text/90">
           {{ t('dock.dropHint', { name: dragState.name }) }}
         </div>
 
@@ -182,12 +184,12 @@ watch(dragState, (next) => {
             :data-project-id="project.id"
             role="button"
             tabindex="0"
-            class="relative flex w-full items-center gap-3 border-b border-line/30 px-4 py-3 text-left transition-all duration-fast ease-standard last:border-b-0"
+            class="dock-item relative flex w-full items-center gap-3 border-b border-line/30 px-4 py-2.5 text-left transition-all duration-fast ease-standard last:border-b-0"
             :class="[
               hoverOverProjectId === project.id
-                ? 'bg-accent/[0.18] ring-2 ring-inset ring-accent/55 shadow-[inset_0_0_0_1px_rgb(var(--vt-color-accent)/0.2)]'
+                ? 'is-hover'
                 : 'hover:bg-text/[0.045]',
-              pulseProjectId === project.id ? 'animate-pulse' : '',
+              pulseProjectId === project.id ? 'is-pulse' : '',
             ]"
             @dragover="onItemDragOver($event, project.id)"
             @dragenter="onItemDragOver($event, project.id)"
@@ -198,13 +200,14 @@ watch(dragState, (next) => {
               class="absolute bottom-0 left-0 top-0 transition-all duration-fast ease-standard"
               :style="{
                 background: colorOf(project.projectType),
-                width: hoverOverProjectId === project.id ? '6px' : '4px',
+                width: hoverOverProjectId === project.id ? '4px' : '2px',
+                opacity: hoverOverProjectId === project.id ? 1 : 0.75,
               }"
               aria-hidden="true"
             />
-            <div class="min-w-0 flex-1 pl-1">
+            <div class="min-w-0 flex-1 pl-2">
               <div class="truncate text-[13px] font-medium text-text">{{ project.name }}</div>
-              <div class="mt-0.5 truncate font-mono text-[11px] leading-4 text-muted/75">{{ project.path }}</div>
+              <div class="mt-0.5 truncate font-mono text-[11px] leading-4 text-muted/70">{{ project.path }}</div>
             </div>
           </div>
         </div>
@@ -212,3 +215,33 @@ watch(dragState, (next) => {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.dock-pill {
+  box-shadow: 0 0 14px rgb(var(--vt-color-accent) / 0.18);
+}
+.dock-pill:hover {
+  box-shadow: 0 0 22px rgb(var(--vt-color-accent) / 0.28);
+}
+.dock-pill.is-dragging {
+  animation: dock-pill-pulse 1.4s ease-in-out infinite;
+  background: rgb(var(--vt-color-accent) / 0.28);
+  border-color: rgb(var(--vt-color-accent) / 0.65);
+  box-shadow: 0 0 26px rgb(var(--vt-color-accent) / 0.40);
+}
+@keyframes dock-pill-pulse {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.08); }
+}
+.dock-item.is-hover {
+  background: rgb(var(--vt-color-accent) / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(var(--vt-color-accent) / 0.30);
+}
+.dock-item.is-pulse {
+  animation: dock-item-pulse 0.8s ease-out;
+}
+@keyframes dock-item-pulse {
+  0%   { background: rgb(var(--vt-color-success) / 0.30); }
+  100% { background: transparent; }
+}
+</style>

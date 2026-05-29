@@ -14,8 +14,21 @@
 }
 
 :root {
-  --vt-radius-xl: 32px;
-  --vt-radius-lg: 24px;
-  --vt-radius-md: 18px;
-  --vt-radius-sm: 14px;
+  --vt-radius-xl: 16px;
+  --vt-radius-lg: 12px;
+  --vt-radius-md: 8px;
+  --vt-radius-sm: 6px;
+
+  --vt-text-xs: 11px;
+  --vt-text-sm: 12px;
+  --vt-text-base: 13px;
+  --vt-text-lg: 16px;
+  --vt-text-xl: 20px;
+
+  --vt-space-1: 4px;
+  --vt-space-2: 8px;
+  --vt-space-3: 12px;
+  --vt-space-4: 16px;
+  --vt-space-5: 24px;
+  --vt-space-6: 32px;
 }

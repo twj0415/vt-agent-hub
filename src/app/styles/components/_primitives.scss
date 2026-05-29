@@ -1,0 +1,167 @@
+// Reusable visual primitives for VT Hub.
+// Use these in Vue templates as plain classnames to avoid Tailwind class soup.
+
+@layer components {
+  .vt-card {
+    position: relative;
+    border-radius: var(--vt-radius-lg);
+    border: 1px solid rgb(var(--vt-color-line));
+    background: rgb(var(--vt-color-panel));
+    box-shadow: var(--vt-shadow-elevation-1);
+    transition:
+      background-color var(--vt-duration-normal) var(--vt-ease-standard),
+      border-color var(--vt-duration-normal) var(--vt-ease-standard),
+      box-shadow var(--vt-duration-normal) var(--vt-ease-standard),
+      transform var(--vt-duration-normal) var(--vt-ease-standard);
+  }
+  .vt-card-hover {
+    cursor: pointer;
+  }
+  .vt-card-hover:hover {
+    border-color: rgb(var(--vt-color-line-strong));
+    background: rgb(var(--vt-color-panel-strong));
+  }
+
+  .vt-card-strong {
+    background: rgb(var(--vt-color-panel-strong));
+  }
+
+  .vt-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--vt-space-3);
+    transition:
+      background-color var(--vt-duration-fast) var(--vt-ease-standard),
+      border-color var(--vt-duration-fast) var(--vt-ease-standard);
+  }
+  .vt-row-hover:hover {
+    background: rgb(var(--vt-color-text) / 0.04);
+  }
+
+  .vt-tag {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: var(--vt-radius-sm);
+    border: 1px solid rgb(var(--vt-color-line));
+    background: rgb(var(--vt-color-surface-2));
+    color: rgb(var(--vt-color-muted));
+    font-size: var(--vt-text-xs);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    font-feature-settings: 'tnum';
+  }
+  .vt-tag-accent {
+    border-color: rgb(var(--vt-color-accent) / 0.30);
+    background: rgb(var(--vt-color-accent) / 0.08);
+    color: rgb(var(--vt-color-accent));
+  }
+  .vt-tag-success {
+    border-color: rgb(var(--vt-color-success) / 0.30);
+    background: rgb(var(--vt-color-success) / 0.08);
+    color: rgb(var(--vt-color-success));
+  }
+  .vt-tag-warning {
+    border-color: rgb(var(--vt-color-warning) / 0.30);
+    background: rgb(var(--vt-color-warning) / 0.08);
+    color: rgb(var(--vt-color-warning));
+  }
+  .vt-tag-danger {
+    border-color: rgb(var(--vt-color-danger) / 0.30);
+    background: rgb(var(--vt-color-danger) / 0.08);
+    color: rgb(var(--vt-color-danger));
+  }
+
+  .vt-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .vt-status-dot-lg {
+    width: 8px;
+    height: 8px;
+  }
+  .vt-status-dot-pulse {
+    box-shadow: 0 0 0 2px rgb(var(--vt-color-success) / 0.20);
+  }
+
+  .vt-status-success { color: rgb(var(--vt-color-success)); }
+  .vt-status-warning { color: rgb(var(--vt-color-warning)); }
+  .vt-status-danger  { color: rgb(var(--vt-color-danger)); }
+  .vt-status-info    { color: rgb(var(--vt-color-accent)); }
+  .vt-status-muted   { color: rgb(var(--vt-color-muted) / 0.6); }
+
+  .vt-accent-bar {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 0;
+    width: 2px;
+    border-radius: 0 2px 2px 0;
+    background: rgb(var(--vt-color-accent));
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  .vt-accent-bar-thin {
+    width: 2px;
+  }
+
+  .vt-glow-btn {
+    position: relative;
+    background: rgb(var(--vt-color-accent));
+    color: #fff;
+    border-radius: var(--vt-radius-md);
+    box-shadow: var(--vt-shadow-glow-accent-soft);
+    transition:
+      transform var(--vt-duration-normal) var(--vt-ease-standard),
+      box-shadow var(--vt-duration-normal) var(--vt-ease-standard),
+      background-color var(--vt-duration-normal) var(--vt-ease-standard);
+  }
+  .vt-glow-btn:hover {
+    transform: translateY(-0.5px);
+    box-shadow: var(--vt-shadow-glow-accent);
+    background: rgb(var(--vt-color-accent-strong));
+  }
+  .vt-glow-btn:active {
+    transform: translateY(0);
+  }
+
+  .vt-brand-gradient {
+    background: linear-gradient(
+      92deg,
+      rgb(var(--vt-color-accent)) 0%,
+      rgb(var(--vt-color-accent-strong)) 45%,
+      #a78bfa 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .vt-text-1 { color: rgb(var(--vt-color-text)); }
+  .vt-text-2 { color: rgb(var(--vt-color-muted)); }
+  .vt-text-3 { color: rgb(var(--vt-color-muted) / 0.6); }
+
+  .vt-divider {
+    height: 1px;
+    background: rgb(var(--vt-color-line));
+    border: 0;
+  }
+
+  .vt-ring-accent {
+    box-shadow: 0 0 0 1px rgb(var(--vt-color-accent) / 0.40);
+  }
+
+  .vt-mono {
+    font-family:
+      'SF Mono', ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+    font-feature-settings: 'tnum', 'zero';
+  }
+}

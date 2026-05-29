@@ -27,7 +27,6 @@ impl ProviderRuntimeService {
             provider_id: config.provider_id,
             tool_id: config.tool_id,
             schema_version: config.schema_version,
-            display_name: config.display_name,
             model: config.model,
             reasoning: config.reasoning,
             base_url: config.base_url,

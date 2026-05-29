@@ -9,8 +9,8 @@ const toolsStore = useToolsStore()
 
 <template>
   <div class="grid gap-4 xl:grid-cols-2">
-    <section class="rounded-[16px] border border-line/60 bg-panel/60 p-4">
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.credential') }}</div>
+    <section class="rounded-vt-md border border-line bg-surface-2/40 p-4">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.credential') }}</div>
       <a-input-password
         :value="toolsStore.draft.token"
         :placeholder="t('ui.common.credential')"
@@ -34,10 +34,10 @@ const toolsStore = useToolsStore()
       </div>
     </section>
 
-    <section class="rounded-[16px] border border-line/60 bg-panel/60 p-4">
-      <div class="text-sm font-semibold text-text">{{ t('ui.common.repairTool') }}</div>
-      <div class="mt-1 text-sm leading-6 text-muted">{{ toolsStore.diagnostics.repairHint }}</div>
-      <div class="mt-3 grid gap-2 text-sm text-muted">
+    <section class="rounded-vt-md border border-line bg-surface-2/40 p-4">
+      <div class="text-[13px] font-semibold text-text">{{ t('ui.common.repairTool') }}</div>
+      <div class="mt-1 text-[13px] leading-6 text-muted">{{ toolsStore.diagnostics.repairHint }}</div>
+      <div class="mt-3 grid gap-2 text-[13px] text-muted">
         <div class="break-all">Live Config: {{ toolsStore.diagnostics.liveConfigPath || '-' }}</div>
         <div>{{ t('ui.common.status') }}: {{ toolsStore.diagnostics.repairState || '-' }}</div>
       </div>

@@ -177,7 +177,6 @@ base_url = "https://api.openai.com/v1"
 
         assert_eq!(codex.provider_name, "OpenAI");
         assert_eq!(codex.category, "official");
-        assert_eq!(codex.display_name, "OpenAI");
         assert_eq!(codex.credential_token.as_deref(), Some("codex-token"));
         assert_eq!(codex.config_json.get("wireApi").and_then(serde_json::Value::as_str), Some("responses"));
 
@@ -204,7 +203,7 @@ base_url = "https://api.openai.com/v1"
             .expect("claude import should succeed");
 
         assert_eq!(claude.provider_name, "Claude Bedrock");
-        assert_eq!(claude.category, "custom_gateway");
+        assert_eq!(claude.category, "cloud_provider");
         assert_eq!(claude.base_url, "bedrock://eu-west-1");
         assert_eq!(claude.credential_token.as_deref(), Some("claude-token"));
         assert_eq!(claude.config_json.get("providerKind").and_then(serde_json::Value::as_str), Some("bedrock"));

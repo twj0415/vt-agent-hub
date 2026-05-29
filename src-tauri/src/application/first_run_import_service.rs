@@ -1069,7 +1069,6 @@ impl FirstRunImportService {
                     .and_then(|provider| provider.configs.first().map(|config| config.id)),
                 tool_id,
                 schema_version: 1,
-                display_name: candidate.name.clone(),
                 model,
                 reasoning,
                 base_url,

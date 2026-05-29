@@ -1,10 +1,9 @@
 :root {
-  /* macOS 标准 ease：通用过渡；spring：浮层/弹出物。 */
   --vt-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
   --vt-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --vt-duration-fast: 120ms;
-  --vt-duration-normal: 150ms;
-  --vt-duration-slow: 260ms;
+  --vt-duration-normal: 180ms;
+  --vt-duration-slow: 240ms;
 }
 
 html,
@@ -19,9 +18,13 @@ html {
   color-scheme: light;
   overflow: hidden;
   scrollbar-gutter: stable;
+  transition:
+    background-color var(--vt-duration-slow) var(--vt-ease-standard),
+    color var(--vt-duration-slow) var(--vt-ease-standard);
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+:root[data-theme='graphite'] {
   color-scheme: dark;
 }
 
@@ -35,6 +38,7 @@ body {
     -apple-system,
     BlinkMacSystemFont,
     "SF Pro Text",
+    "Inter",
     "Helvetica Neue",
     "Segoe UI Variable",
     "Segoe UI",
@@ -42,13 +46,16 @@ body {
     "Microsoft YaHei",
     system-ui,
     sans-serif;
-  font-feature-settings: "kern", "liga", "calt";
+  font-feature-settings: "kern", "liga", "calt", "cv11";
   font-kerning: normal;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.011em;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--vt-duration-slow) var(--vt-ease-standard),
+    color var(--vt-duration-slow) var(--vt-ease-standard);
 }
 
 a,
@@ -58,9 +65,9 @@ button,
 }
 
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid rgb(var(--vt-color-accent) / 0.28);
+  outline: 2px solid rgb(var(--vt-color-accent) / 0.35);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgb(var(--vt-color-accent) / 0.08);
+  border-radius: var(--vt-radius-sm);
 }
 
 button,
@@ -72,13 +79,13 @@ textarea {
 
 * {
   box-sizing: border-box;
-  scrollbar-width: none;
-  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--vt-color-text) / 0.16) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -86,23 +93,28 @@ textarea {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: transparent;
+  background: rgb(var(--vt-color-text) / 0.12);
   border: 2px solid transparent;
   border-radius: 999px;
   background-clip: padding-box;
-  transition: background-color 0.18s ease;
+  transition: background-color 180ms ease;
 }
 
 *:hover::-webkit-scrollbar-thumb {
-  background: rgb(var(--vt-color-text) / 0.18);
+  background: rgb(var(--vt-color-text) / 0.22);
   background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--vt-color-text) / 0.32);
+  background: rgb(var(--vt-color-text) / 0.36);
   background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+::selection {
+  background: rgb(var(--vt-color-accent) / 0.22);
+  color: rgb(var(--vt-color-text));
 }

@@ -99,7 +99,7 @@ mod tests {
             .expect("provider should insert");
         db.connection()
             .execute(
-                "insert into provider_tool_configs (provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (900, 101, 1, 'Cleanup Config', 'gpt-5.5', 'medium', 'https://api.openai.com/v1', 'cleanup-ref', '{}', 1, 502)",
+                "insert into provider_tool_configs (provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (900, 101, 1, 'gpt-5.5', 'medium', 'https://api.openai.com/v1', 'cleanup-ref', '{}', 1, 502)",
                 [],
             )
             .expect("provider config should insert");
@@ -139,7 +139,7 @@ mod tests {
             .expect("providers should insert");
         db.connection()
             .execute(
-                "insert into provider_tool_configs (id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (901, 901, 101, 1, 'A', 'gpt-5.5', 'medium', 'https://api.openai.com/v1', '', '{}', 1, 502), (902, 902, 101, 1, 'B', 'gpt-5.5', 'high', 'http://43.173.89.135:8080', '', '{}', 0, 504)",
+                "insert into provider_tool_configs (id, provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (901, 901, 101, 1, 'gpt-5.5', 'medium', 'https://api.openai.com/v1', '', '{}', 1, 502), (902, 902, 101, 1, 'gpt-5.5', 'high', 'http://43.173.89.135:8080', '', '{}', 0, 504)",
                 [],
             )
             .expect("configs should insert");

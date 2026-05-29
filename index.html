@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VT Hub Manager</title>
+    <script>
+      (function () {
+        try {
+          var k = 'vt-agent-hub.theme';
+          var v = localStorage.getItem(k);
+          if (v === 'clean') v = 'graphite';
+          if (['apple', 'warm', 'graphite', 'dark'].indexOf(v) === -1) v = 'apple';
+          var d = document.documentElement;
+          d.dataset.theme = v;
+          d.style.colorScheme = (v === 'dark' || v === 'graphite') ? 'dark' : 'light';
+          var bgMap = { apple: '#FAFAFA', warm: '#F8F5EF', graphite: '#18181B', dark: '#0A0A0F' };
+          var fgMap = { apple: '#52525B', warm: '#786958', graphite: '#A1A1AA', dark: '#A1A1AA' };
+          d.style.setProperty('--vt-bootstrap-bg', bgMap[v]);
+          d.style.setProperty('--vt-bootstrap-fg', fgMap[v]);
+        } catch (e) {}
+      })();
+    </script>
     <style>
       html,
       body,
@@ -13,11 +30,15 @@
         margin: 0;
         overflow: hidden;
       }
+      #app {
+        background: var(--vt-bootstrap-bg, #fafafa);
+        color: var(--vt-bootstrap-fg, #52525b);
+      }
     </style>
   </head>
   <body>
     <div id="app">
-      <div style="height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f7;color:#7a7a7f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;font-weight:600;letter-spacing:-0.01em;">
+      <div style="height:100%;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:500;letter-spacing:-0.01em;color:inherit;">
         正在启动 VT Hub…
       </div>
     </div>

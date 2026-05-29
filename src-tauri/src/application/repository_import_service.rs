@@ -18,7 +18,8 @@ use crate::core::{taxonomy, validation};
 use crate::dto::{
     GitHubRepoImportResultDto, GitHubRepoPreviewDto, GitHubRepoRefDto, GitHubSkillConflictDto,
     GitHubSkillImportSelectionDto, GitHubSkillPreviewDto, ImportedGitHubSkillDto,
-    RepositoryImportAssetDto, RepositoryImportReportDto,
+    LocalSkillsImportResultDto, LocalSkillsPreviewDto, RepositoryImportAssetDto,
+    RepositoryImportReportDto,
 };
 use crate::infrastructure::database::Database;
 use crate::infrastructure::resource_repo::ResourceRepo;
@@ -142,6 +143,87 @@ impl RepositoryImportService {
         result
     }
 
+    pub fn preview_local_skills(&self, path: &str) -> Result<LocalSkillsPreviewDto, String> {
+        let root = self.validate_local_skills_root(path)?;
+        let fallback = Self::local_fallback_name(&root);
+        let candidates = Self::build_skill_candidates_from_snapshot(&root, &fallback)?;
+        let mut skills = Vec::with_capacity(candidates.len());
+
+        for candidate in candidates {
+            let existing = {
+                let db = self.db.lock().expect("db poisoned");
+                ResourceRepo::new(&db).find_latest_skill_version_by_name(&candidate.skill_id)?
+            };
+            skills.push(Self::candidate_preview(
+                candidate,
+                existing.map(|skill| GitHubSkillConflictDto {
+                    existing_skill_id: skill.asset_id,
+                    existing_name: skill.name,
+                }),
+            ));
+        }
+
+        Ok(LocalSkillsPreviewDto {
+            root_path: root.display().to_string(),
+            skills,
+        })
+    }
+
+    pub fn import_local_skills(
+        &self,
+        path: &str,
+        selections: Vec<GitHubSkillImportSelectionDto>,
+    ) -> Result<LocalSkillsImportResultDto, String> {
+        let root = self.validate_local_skills_root(path)?;
+        let fallback = Self::local_fallback_name(&root);
+        let (imported_skills, skipped_skills) = self.apply_skill_snapshot(
+            &root,
+            &fallback,
+            selections,
+            "Local skill import",
+            "local-skill-import",
+            "local",
+        )?;
+
+        Ok(LocalSkillsImportResultDto {
+            root_path: root.display().to_string(),
+            imported_skills,
+            skipped_skills,
+        })
+    }
+
+    fn validate_local_skills_root(&self, path: &str) -> Result<PathBuf, String> {
+        let trimmed = path.trim();
+        if trimmed.is_empty() {
+            return Err("Local skills directory path is required.".to_string());
+        }
+        let raw = PathBuf::from(trimmed);
+        let canonical = raw
+            .canonicalize()
+            .map_err(|error| format!("Local skills directory not accessible: {error}"))?;
+        if !canonical.is_dir() {
+            return Err("Local skills source must be a directory.".to_string());
+        }
+        if let Ok(library_root) = self.context.library_root() {
+            if let Ok(canonical_library) = library_root.canonicalize() {
+                if canonical.starts_with(&canonical_library) {
+                    return Err(
+                        "Local skills source must be outside the app library directory."
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        Ok(canonical)
+    }
+
+    fn local_fallback_name(root: &Path) -> String {
+        root.file_name()
+            .and_then(|value| value.to_str())
+            .map(str::to_string)
+            .unwrap_or_else(|| "local-skill".to_string())
+    }
+
     fn preview_github_snapshot(
         &self,
         repo: &GitHubRepoRef,
@@ -176,7 +258,38 @@ impl RepositoryImportService {
         snapshot_dir: &Path,
         selections: Vec<GitHubSkillImportSelectionDto>,
     ) -> Result<GitHubRepoImportResultDto, String> {
-        let candidates = Self::build_github_skill_candidates_from_snapshot(repo, snapshot_dir)?;
+        let fallback = repo
+            .repo
+            .strip_suffix("-skill")
+            .unwrap_or(&repo.repo)
+            .to_string();
+        let (imported_skills, skipped_skills) = self.apply_skill_snapshot(
+            snapshot_dir,
+            &fallback,
+            selections,
+            "GitHub skill import",
+            "github-skill-import",
+            "GitHub",
+        )?;
+
+        Ok(GitHubRepoImportResultDto {
+            repo: repo.to_dto(),
+            imported_skills,
+            skipped_skills,
+        })
+    }
+
+    fn apply_skill_snapshot(
+        &self,
+        snapshot_dir: &Path,
+        root_fallback_name: &str,
+        selections: Vec<GitHubSkillImportSelectionDto>,
+        record_title: &str,
+        record_action: &str,
+        record_noun: &str,
+    ) -> Result<(Vec<ImportedGitHubSkillDto>, Vec<String>), String> {
+        let candidates =
+            Self::build_skill_candidates_from_snapshot(snapshot_dir, root_fallback_name)?;
         let candidates = candidates
             .into_iter()
             .map(|candidate| (candidate.manifest.source_path.clone(), candidate))
@@ -197,7 +310,7 @@ impl RepositoryImportService {
 
             let candidate = candidates.get(&selection.source_path).ok_or_else(|| {
                 format!(
-                    "Selected skill '{}' was not found in repository snapshot.",
+                    "Selected skill '{}' was not found in skill snapshot.",
                     selection.source_path
                 )
             })?;
@@ -253,16 +366,16 @@ impl RepositoryImportService {
             &db,
             None,
             "operation",
-            "GitHub skill import",
-            "github-skill-import",
-            &format!("Imported {} GitHub skill(s).", imported_skills.len()),
+            record_title,
+            record_action,
+            &format!(
+                "Imported {} {} skill(s).",
+                imported_skills.len(),
+                record_noun
+            ),
         )?;
 
-        Ok(GitHubRepoImportResultDto {
-            repo: repo.to_dto(),
-            imported_skills,
-            skipped_skills,
-        })
+        Ok((imported_skills, skipped_skills))
     }
 
     fn save_github_skill(
@@ -865,6 +978,18 @@ impl RepositoryImportService {
         repo: &GitHubRepoRef,
         snapshot_dir: &Path,
     ) -> Result<Vec<GitHubSkillCandidate>, String> {
+        let fallback = repo
+            .repo
+            .strip_suffix("-skill")
+            .unwrap_or(&repo.repo)
+            .to_string();
+        Self::build_skill_candidates_from_snapshot(snapshot_dir, &fallback)
+    }
+
+    pub(super) fn build_skill_candidates_from_snapshot(
+        snapshot_dir: &Path,
+        root_fallback_name: &str,
+    ) -> Result<Vec<GitHubSkillCandidate>, String> {
         let manifests = Self::collect_skill_manifests(snapshot_dir)?;
         let mut candidates = Vec::new();
         for manifest in manifests {
@@ -872,10 +997,7 @@ impl RepositoryImportService {
             let body = fs::read_to_string(&skill_md).map_err(|error| error.to_string())?;
             let frontmatter = Self::parse_skill_frontmatter(&body);
             let fallback = if manifest.source_path == "." {
-                repo.repo
-                    .strip_suffix("-skill")
-                    .unwrap_or(&repo.repo)
-                    .to_string()
+                root_fallback_name.to_string()
             } else {
                 manifest.skill_directory_name.clone()
             };

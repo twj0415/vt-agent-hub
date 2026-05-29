@@ -13,8 +13,9 @@ mod v010_add_provider_credentials;
 mod v011_enforce_provider_active_unique;
 mod v012_introduce_direct_bindings;
 mod v013_drop_legacy_pack_tables;
+mod v014_refine_provider_schema;
 
-const LATEST_SCHEMA_VERSION: i32 = 13;
+const LATEST_SCHEMA_VERSION: i32 = 14;
 
 struct Migration {
     version: i32,
@@ -87,6 +88,11 @@ const MIGRATIONS: &[Migration] = &[
         version: 13,
         name: "013_drop_legacy_pack_tables",
         apply: v013_drop_legacy_pack_tables::apply,
+    },
+    Migration {
+        version: 14,
+        name: "014_refine_provider_schema",
+        apply: v014_refine_provider_schema::apply,
     },
 ];
 

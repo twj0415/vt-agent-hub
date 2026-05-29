@@ -135,11 +135,9 @@ mod tests {
         fs::write(snapshot.join(".github").join("SKILL.md"), "# Hidden").unwrap();
         fs::write(snapshot.join("skills").join("SKILL.md"), "# Container").unwrap();
 
-        let candidates = RepositoryImportService::build_github_skill_candidates_from_snapshot(
-            &github_repo_ref(),
-            &snapshot,
-        )
-        .expect("candidates should build");
+        let candidates =
+            RepositoryImportService::build_skill_candidates_from_snapshot(&snapshot, "demo-skill")
+                .expect("candidates should build");
         let source_paths = candidates
             .iter()
             .map(|candidate| candidate.manifest.source_path.as_str())
@@ -148,6 +146,24 @@ mod tests {
         assert_eq!(source_paths, vec![".", "skill-a", "skills/nested/skill-b"]);
         assert_eq!(candidates[0].skill_id, "root-skill");
         assert_eq!(candidates[0].description.as_deref(), Some("Root desc"));
+    }
+
+    #[test]
+    fn github_snapshot_candidates_keep_legacy_repo_wrapper() {
+        // 历史薄包装仍可调用,fallback 名来自 repo.repo
+        let root = unique_temp_dir("github-snapshot-legacy");
+        let snapshot = root.join("snapshot");
+        fs::create_dir_all(&snapshot).unwrap();
+        fs::write(snapshot.join("SKILL.md"), "# Root").unwrap();
+
+        let candidates = RepositoryImportService::build_github_skill_candidates_from_snapshot(
+            &github_repo_ref(),
+            &snapshot,
+        )
+        .expect("legacy wrapper should still build");
+        assert_eq!(candidates.len(), 1);
+        // github_repo_ref 的 repo 名是 "demo-skill",strip "-skill" 后 fallback="demo"
+        assert_eq!(candidates[0].skill_id, "demo");
     }
 
     #[test]
@@ -193,5 +209,150 @@ mod tests {
             .join("scripts")
             .join("run.py")
             .is_file());
+    }
+
+    fn make_local_skills_layout(label: &str) -> (PathBuf, PathBuf) {
+        let root = unique_temp_dir(label);
+        let skills = root.join("workspace");
+        fs::create_dir_all(skills.join("foo").join("scripts")).unwrap();
+        fs::create_dir_all(skills.join("bar")).unwrap();
+        fs::write(
+            skills.join("foo").join("SKILL.md"),
+            "---\nname: Foo Skill\ndescription: Foo desc\n---\n\n# Foo",
+        )
+        .unwrap();
+        fs::write(skills.join("foo").join("scripts").join("run.py"), "x = 1").unwrap();
+        fs::write(skills.join("bar").join("SKILL.md"), "# Bar").unwrap();
+        (root, skills)
+    }
+
+    #[test]
+    fn previews_local_skills_from_directory() {
+        let (root, skills_root) = make_local_skills_layout("local-skill-preview");
+        let context = ServiceContext::at_db(root.join("state").join("app.db"));
+        let service = RepositoryImportService::with_context(context)
+            .expect("service should initialize");
+
+        let preview = service
+            .preview_local_skills(skills_root.to_str().unwrap())
+            .expect("local preview should succeed");
+
+        let names = preview
+            .skills
+            .iter()
+            .map(|skill| skill.skill_id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(names, vec!["bar", "foo-skill"]);
+        assert!(preview.skills.iter().all(|skill| skill.conflict.is_none()));
+        assert!(preview
+            .root_path
+            .ends_with(&"workspace".to_string()));
+    }
+
+    #[test]
+    fn imports_local_skills_into_library() {
+        let (root, skills_root) = make_local_skills_layout("local-skill-apply");
+        let context = ServiceContext::at_db(root.join("state").join("app.db"));
+        let service = RepositoryImportService::with_context(context.clone())
+            .expect("service should initialize");
+
+        let result = service
+            .import_local_skills(
+                skills_root.to_str().unwrap(),
+                vec![
+                    crate::dto::GitHubSkillImportSelectionDto {
+                        source_path: "foo".to_string(),
+                        resolution: "overwrite".to_string(),
+                        renamed_skill_id: None,
+                    },
+                    crate::dto::GitHubSkillImportSelectionDto {
+                        source_path: "bar".to_string(),
+                        resolution: "overwrite".to_string(),
+                        renamed_skill_id: None,
+                    },
+                ],
+            )
+            .expect("local import should succeed");
+
+        assert_eq!(result.imported_skills.len(), 2);
+        assert!(result.skipped_skills.is_empty());
+
+        let db = context.open_db().expect("db should reopen");
+        let resource = ResourceRepo::new(&db);
+        assert!(resource
+            .find_latest_skill_version_by_name("foo-skill")
+            .unwrap()
+            .is_some());
+        assert!(resource
+            .find_latest_skill_version_by_name("bar")
+            .unwrap()
+            .is_some());
+
+        assert!(root
+            .join("state")
+            .join("library")
+            .join("skills")
+            .join("foo-skill")
+            .join("scripts")
+            .join("run.py")
+            .is_file());
+    }
+
+    #[test]
+    fn rejects_nonexistent_local_path() {
+        let root = unique_temp_dir("local-skill-missing");
+        let context = ServiceContext::at_db(root.join("state").join("app.db"));
+        let service = RepositoryImportService::with_context(context)
+            .expect("service should initialize");
+
+        let missing = root.join("does-not-exist");
+        let error = service
+            .preview_local_skills(missing.to_str().unwrap())
+            .expect_err("missing path should error");
+        assert!(
+            error.to_lowercase().contains("not accessible")
+                || error.to_lowercase().contains("not found"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn rejects_file_path_for_local_skills() {
+        let root = unique_temp_dir("local-skill-file");
+        fs::create_dir_all(&root).unwrap();
+        let file_path = root.join("only-a-file.md");
+        fs::write(&file_path, "not a directory").unwrap();
+        let context = ServiceContext::at_db(root.join("state").join("app.db"));
+        let service = RepositoryImportService::with_context(context)
+            .expect("service should initialize");
+
+        let error = service
+            .preview_local_skills(file_path.to_str().unwrap())
+            .expect_err("file path should error");
+        assert!(
+            error.to_lowercase().contains("directory"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn rejects_local_path_inside_app_library() {
+        let root = unique_temp_dir("local-skill-self-import");
+        let context = ServiceContext::at_db(root.join("state").join("app.db"));
+        let service = RepositoryImportService::with_context(context.clone())
+            .expect("service should initialize");
+
+        let library_root = context.library_root().expect("library root resolves");
+        let inside_library = library_root.join("skills").join("self");
+        fs::create_dir_all(&inside_library).unwrap();
+        fs::write(inside_library.join("SKILL.md"), "# Self").unwrap();
+
+        let error = service
+            .preview_local_skills(inside_library.to_str().unwrap())
+            .expect_err("library subdir should be rejected");
+        assert!(
+            error.to_lowercase().contains("library"),
+            "unexpected error: {error}"
+        );
     }
 }

@@ -87,3 +87,18 @@ pub struct GitHubRepoImportResultDto {
     pub imported_skills: Vec<ImportedGitHubSkillDto>,
     pub skipped_skills: Vec<String>,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalSkillsPreviewDto {
+    pub root_path: String,
+    pub skills: Vec<GitHubSkillPreviewDto>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalSkillsImportResultDto {
+    pub root_path: String,
+    pub imported_skills: Vec<ImportedGitHubSkillDto>,
+    pub skipped_skills: Vec<String>,
+}

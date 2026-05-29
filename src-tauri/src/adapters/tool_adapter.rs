@@ -60,7 +60,6 @@ pub struct PresetConfigBuildInput {
 pub struct ProviderConfigImport {
     pub provider_name: String,
     pub category: String,
-    pub display_name: String,
     pub model: String,
     pub reasoning: String,
     pub base_url: String,

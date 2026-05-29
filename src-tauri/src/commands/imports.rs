@@ -4,7 +4,7 @@ use crate::commands::history_log::{record_command_failure, CommandFailure};
 use crate::core::routes::ROUTE_RULES;
 use crate::dto::{
     AppResponse, GitHubRepoImportResultDto, GitHubRepoPreviewDto, GitHubSkillImportSelectionDto,
-    RepositoryImportReportDto,
+    LocalSkillsImportResultDto, LocalSkillsPreviewDto, RepositoryImportReportDto,
 };
 
 #[tauri::command]
@@ -111,6 +111,59 @@ pub fn import_github_repo_skills(
                 "github_skill_import_failed",
                 &error,
                 "errors.repositoryImportFailed",
+            )
+        }
+    }
+}
+
+#[tauri::command]
+pub fn preview_local_skill_import(
+    state: tauri::State<'_, AppContainer>,
+    path: String,
+) -> AppResponse<LocalSkillsPreviewDto> {
+    let service = RepositoryImportService::with_container(state.inner());
+
+    match service.preview_local_skills(&path) {
+        Ok(preview) => AppResponse::success(preview),
+        Err(error) => {
+            record_history_failure(
+                "operation",
+                "Local skill import preview failed",
+                "local-skill-import-preview",
+                &error,
+                Some(&path),
+            );
+            AppResponse::error(
+                "local_skill_import_preview_failed",
+                &error,
+                "errors.localSkillImportPreviewFailed",
+            )
+        }
+    }
+}
+
+#[tauri::command]
+pub fn import_local_skills(
+    state: tauri::State<'_, AppContainer>,
+    path: String,
+    selections: Vec<GitHubSkillImportSelectionDto>,
+) -> AppResponse<LocalSkillsImportResultDto> {
+    let service = RepositoryImportService::with_container(state.inner());
+
+    match service.import_local_skills(&path, selections) {
+        Ok(result) => AppResponse::success(result),
+        Err(error) => {
+            record_history_failure(
+                "operation",
+                "Local skill import failed",
+                "local-skill-import",
+                &error,
+                Some(&path),
+            );
+            AppResponse::error(
+                "local_skill_import_failed",
+                &error,
+                "errors.localSkillImportFailed",
             )
         }
     }

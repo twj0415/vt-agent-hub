@@ -4,9 +4,12 @@ import {
   deleteSkillAsset,
   getLibrarySnapshot,
   importGitHubRepoSkills,
+  importLocalSkills,
   installSkillAsset,
   markSkillAssetStale,
+  pickFolderPath,
   previewGitHubRepoImport,
+  previewLocalSkillImport,
   previewRepositoryImport,
   repairSkillAsset,
   saveSkillAsset,
@@ -24,6 +27,8 @@ import type {
   GitHubRepoImportResult,
   GitHubRepoPreview,
   GitHubSkillImportSelection,
+  LocalSkillsImportResult,
+  LocalSkillsPreview,
   RepositoryImportReport,
   SkillRuntime,
 } from '@/shared/api/client'
@@ -36,8 +41,10 @@ import { useToolContextStore } from './tool-context'
 import { useToolsStore } from './tools'
 
 type SkillSort = 'name' | 'code'
-type GitHubImportStep = 'input' | 'preview' | 'result'
+type SkillImportStep = 'input' | 'preview' | 'result'
+type SkillImportSourceKind = 'local' | 'github'
 type GitHubSelectionState = GitHubSkillImportSelection & { selected: boolean }
+type LocalSelectionState = GitHubSkillImportSelection & { selected: boolean }
 
 type SkillToolBindDraft = {
   skillId: number | null
@@ -110,6 +117,18 @@ function buildGitHubSelections(preview: GitHubRepoPreview): Record<string, GitHu
   ]))
 }
 
+function buildLocalSelections(preview: LocalSkillsPreview): Record<string, LocalSelectionState> {
+  return Object.fromEntries(preview.skills.map((skill) => [
+    skill.sourcePath,
+    {
+      sourcePath: skill.sourcePath,
+      selected: true,
+      resolution: skill.conflict ? 'skip' : 'overwrite',
+      renamedSkillId: skill.skillId,
+    },
+  ]))
+}
+
 function emptyRuntime(name: string, body: string): SkillRuntime {
   return {
     platformRoot: '',
@@ -158,13 +177,20 @@ export const useSkillStore = defineStore('skills', {
       source: '',
       branch: '',
       conflictStrategy: 'skip' as 'skip' | 'rename' | 'overwrite',
+      sourceKind: 'local' as SkillImportSourceKind,
+      localPath: '',
     },
     repositoryImportReport: null as RepositoryImportReport | null,
     githubPreview: null as GitHubRepoPreview | null,
     githubImportResult: null as GitHubRepoImportResult | null,
     githubSelections: {} as Record<string, GitHubSelectionState>,
     githubSelectedPath: '',
-    githubStep: 'input' as GitHubImportStep,
+    githubStep: 'input' as SkillImportStep,
+    localPreview: null as LocalSkillsPreview | null,
+    localImportResult: null as LocalSkillsImportResult | null,
+    localSelections: {} as Record<string, LocalSelectionState>,
+    localSelectedPath: '',
+    localStep: 'input' as SkillImportStep,
     actionError: '',
   }),
   getters: {
@@ -394,6 +420,7 @@ export const useSkillStore = defineStore('skills', {
       this.importOpen = value
       if (value) {
         this.resetGitHubImport()
+        this.resetLocalImport()
       }
     },
     setImportField(key: 'source' | 'branch' | 'conflictStrategy', value: string) {
@@ -403,6 +430,11 @@ export const useSkillStore = defineStore('skills', {
         this.importDraft.conflictStrategy = value as 'skip' | 'rename' | 'overwrite'
       }
       this.repositoryImportReport = null
+    },
+    setSourceKind(kind: SkillImportSourceKind) {
+      if (this.importDraft.sourceKind === kind) return
+      this.importDraft.sourceKind = kind
+      this.actionError = ''
     },
     async previewRepositoryImport() {
       this.importLoading = true
@@ -463,6 +495,14 @@ export const useSkillStore = defineStore('skills', {
       this.githubSelections = {}
       this.githubSelectedPath = ''
       this.githubStep = 'input'
+    },
+    resetLocalImport() {
+      this.localPreview = null
+      this.localImportResult = null
+      this.localSelections = {}
+      this.localSelectedPath = ''
+      this.localStep = 'input'
+      this.importDraft.localPath = ''
     },
     async previewGitHubImport() {
       this.importLoading = true
@@ -538,6 +578,122 @@ export const useSkillStore = defineStore('skills', {
       } finally {
         this.importLoading = false
       }
+    },
+    async pickLocalSkillsPath() {
+      try {
+        const response = await pickFolderPath()
+        if (!response.success) {
+          this.actionError = resolveAppError(response.error, 'errors.folderPickerFailed')
+          notifyError(this.actionError)
+          return
+        }
+        const picked = response.data
+        if (!picked) return
+        this.importDraft.localPath = picked
+        await this.previewLocalImport()
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.folderPickerFailed')
+        notifyError(this.actionError)
+      }
+    },
+    async previewLocalImport() {
+      if (!this.importDraft.localPath) {
+        this.actionError = translateKey('errors.localSkillsRootInvalid')
+        notifyWarning(this.actionError)
+        return
+      }
+      this.importLoading = true
+      this.localImportResult = null
+      try {
+        const response = await previewLocalSkillImport(this.importDraft.localPath)
+        if (!response.success || !response.data) {
+          this.actionError = resolveAppError(response.error, 'errors.localSkillImportPreviewFailed')
+          notifyError(this.actionError)
+          return
+        }
+        this.localPreview = response.data
+        this.localSelections = buildLocalSelections(response.data)
+        this.localSelectedPath = response.data.skills[0]?.sourcePath ?? ''
+        this.localStep = 'preview'
+        this.actionError = translateKey('feedback.repositoryPreviewDetected', { count: response.data.skills.length })
+        notifySuccess(this.actionError)
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.localSkillImportPreviewFailed')
+        notifyError(this.actionError)
+      } finally {
+        this.importLoading = false
+      }
+    },
+    toggleLocalSkillSelection(sourcePath: string) {
+      const current = this.localSelections[sourcePath]
+      if (!current) return
+      current.selected = !current.selected
+    },
+    setLocalSkillResolution(sourcePath: string, resolution: 'skip' | 'overwrite' | 'rename') {
+      const current = this.localSelections[sourcePath]
+      if (!current) return
+      current.resolution = resolution
+    },
+    setLocalSkillRename(sourcePath: string, renamedSkillId: string) {
+      const current = this.localSelections[sourcePath]
+      if (!current) return
+      current.renamedSkillId = renamedSkillId
+    },
+    setLocalSelectedPath(sourcePath: string) {
+      this.localSelectedPath = sourcePath
+    },
+    async applyLocalImport() {
+      if (!this.importDraft.localPath) {
+        this.actionError = translateKey('errors.localSkillsRootInvalid')
+        notifyWarning(this.actionError)
+        return
+      }
+      const selections = Object.values(this.localSelections)
+        .filter((selection) => selection.selected)
+        .map(({ selected: _selected, ...selection }) => selection)
+      if (selections.length === 0) {
+        this.actionError = translateKey('errors.repositorySourceRequired')
+        notifyWarning(this.actionError)
+        return
+      }
+
+      this.importLoading = true
+      try {
+        const response = await importLocalSkills(this.importDraft.localPath, selections)
+        if (!response.success || !response.data) {
+          this.actionError = resolveAppError(response.error, 'errors.localSkillImportFailed')
+          notifyError(this.actionError)
+          return
+        }
+        await this.hydrateFromSnapshot()
+        this.localImportResult = response.data
+        this.localStep = 'result'
+        this.actionError = translateKey('feedback.repositoryImportCompleted', {
+          rules: 0,
+          skills: response.data.importedSkills.length,
+          presets: 0,
+        })
+        notifySuccess(this.actionError)
+      } catch (error) {
+        this.actionError = resolveUnknownError(error, 'errors.localSkillImportFailed')
+        notifyError(this.actionError)
+      } finally {
+        this.importLoading = false
+      }
+    },
+    async previewSkillImport() {
+      if (this.importDraft.sourceKind === 'local') {
+        await this.previewLocalImport()
+        return
+      }
+      await this.previewGitHubImport()
+    },
+    async applySkillImport() {
+      if (this.importDraft.sourceKind === 'local') {
+        await this.applyLocalImport()
+        return
+      }
+      await this.applyGitHubImport()
     },
     async install(id: number) {
       const item = this.items.find((entry) => entry.id === id)

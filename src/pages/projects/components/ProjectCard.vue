@@ -45,29 +45,29 @@
 
 <template>
   <article
-    class="project-card group relative cursor-pointer overflow-hidden rounded-[16px] border border-line/60 bg-panel-strong/92 shadow-surface transition-colors duration-normal ease-standard hover:border-line-strong/60 hover:bg-panel-strong"
+    class="vt-card vt-card-hover project-card group overflow-hidden"
     @click="emit('open', item.id)"
   >
     <span
-      class="pointer-events-none absolute bottom-3 left-0 top-3 w-[3px] rounded-r-full"
+      class="vt-accent-bar"
       :style="{ background: typeColor }"
       aria-hidden="true"
     />
 
-    <div class="flex flex-col gap-4 p-5 pl-6">
+    <div class="flex flex-col gap-3 p-4 pl-5">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
           <div class="flex min-w-0 items-center gap-2">
             <h3
-              class="truncate text-[15px] font-semibold leading-snug tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
+              class="truncate text-[14px] font-semibold leading-snug tracking-[-0.005em] text-text transition-colors group-hover:text-accent"
             >
               {{ item.name }}
             </h3>
-            <span class="shrink-0 text-[11px] font-medium leading-4 text-muted/72">
+            <span class="vt-tag">
               {{ item.projectTypeLabel }}
             </span>
           </div>
-          <p class="mt-1.5 truncate font-mono text-[11px] leading-4 text-muted/78" :title="item.path">
+          <p class="mt-1 truncate font-mono text-[11px] leading-4 text-muted/75" :title="item.path">
             {{ item.path }}
           </p>
         </div>

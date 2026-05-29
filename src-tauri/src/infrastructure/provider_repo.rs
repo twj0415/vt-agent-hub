@@ -20,7 +20,6 @@ pub struct ProviderToolConfigRecord {
     pub provider_id: i32,
     pub tool_id: i32,
     pub schema_version: i32,
-    pub display_name: String,
     pub model: String,
     pub reasoning: String,
     pub base_url: String,
@@ -45,7 +44,6 @@ pub struct ProviderConfigUpsert {
     pub id: Option<i32>,
     pub tool_id: i32,
     pub schema_version: i32,
-    pub display_name: String,
     pub model: String,
     pub reasoning: String,
     pub base_url: String,
@@ -92,7 +90,7 @@ impl<'a> ProviderRepo<'a> {
         self.db
             .connection()
             .query_row(
-                "select id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where id = ?1",
+                "select id, provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where id = ?1",
                 rusqlite::params![config_id],
                 Self::map_config,
             )
@@ -107,7 +105,7 @@ impl<'a> ProviderRepo<'a> {
         self.db
             .connection()
             .query_row(
-                "select id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 and tool_id = ?2 order by id asc limit 1",
+                "select id, provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 and tool_id = ?2 order by id asc limit 1",
                 rusqlite::params![provider_id, tool_id],
                 Self::map_config,
             )
@@ -155,11 +153,10 @@ impl<'a> ProviderRepo<'a> {
             if let Some(config_id) = config.id {
                 let changed = tx
                     .execute(
-                        "update provider_tool_configs set tool_id = ?1, schema_version = ?2, display_name = ?3, model = ?4, reasoning = ?5, base_url = ?6, credential_ref = ?7, config_json = ?8, updated_at = current_timestamp where id = ?9 and provider_id = ?10",
+                        "update provider_tool_configs set tool_id = ?1, schema_version = ?2, model = ?3, reasoning = ?4, base_url = ?5, credential_ref = ?6, config_json = ?7, updated_at = current_timestamp where id = ?8 and provider_id = ?9",
                         rusqlite::params![
                             config.tool_id,
                             config.schema_version,
-                            config.display_name,
                             config.model,
                             config.reasoning,
                             config.base_url,
@@ -175,12 +172,11 @@ impl<'a> ProviderRepo<'a> {
                 }
             } else {
                 tx.execute(
-                    "insert into provider_tool_configs (provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, 504)",
+                    "insert into provider_tool_configs (provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0, 504)",
                     rusqlite::params![
                         provider_id,
                         config.tool_id,
                         config.schema_version,
-                        config.display_name,
                         config.model,
                         config.reasoning,
                         config.base_url,
@@ -273,7 +269,6 @@ impl<'a> ProviderRepo<'a> {
                 id: None,
                 tool_id: config.tool_id,
                 schema_version: config.schema_version,
-                display_name: config.display_name,
                 model: config.model,
                 reasoning: config.reasoning,
                 base_url: config.base_url,
@@ -350,9 +345,9 @@ impl<'a> ProviderRepo<'a> {
         tool_id: Option<i32>,
     ) -> Result<Vec<ProviderToolConfigRecord>, String> {
         let sql = if tool_id.is_some() {
-            "select id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 and tool_id = ?2 order by id asc"
+            "select id, provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 and tool_id = ?2 order by id asc"
         } else {
-            "select id, provider_id, tool_id, schema_version, display_name, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 order by tool_id asc, id asc"
+            "select id, provider_id, tool_id, schema_version, model, reasoning, base_url, credential_ref, config_json, is_active, state, last_check_status, last_check_latency_ms, last_check_message, last_checked_at from provider_tool_configs where provider_id = ?1 order by tool_id asc, id asc"
         };
         let mut stmt = self
             .db
@@ -396,25 +391,24 @@ impl<'a> ProviderRepo<'a> {
     }
 
     fn map_config(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProviderToolConfigRecord> {
-        let config_json_text: String = row.get(9)?;
+        let config_json_text: String = row.get(8)?;
         let config_json = serde_json::from_str(&config_json_text).unwrap_or(Value::Null);
         Ok(ProviderToolConfigRecord {
             id: row.get(0)?,
             provider_id: row.get(1)?,
             tool_id: row.get(2)?,
             schema_version: row.get(3)?,
-            display_name: row.get(4)?,
-            model: row.get(5)?,
-            reasoning: row.get(6)?,
-            base_url: row.get(7)?,
-            credential_ref: row.get(8)?,
+            model: row.get(4)?,
+            reasoning: row.get(5)?,
+            base_url: row.get(6)?,
+            credential_ref: row.get(7)?,
             config_json,
-            is_active: row.get::<_, i32>(10)? == 1,
-            state: row.get(11)?,
-            last_check_status: row.get(12)?,
-            last_check_latency_ms: row.get(13)?,
-            last_check_message: row.get(14)?,
-            last_checked_at: row.get(15)?,
+            is_active: row.get::<_, i32>(9)? == 1,
+            state: row.get(10)?,
+            last_check_status: row.get(11)?,
+            last_check_latency_ms: row.get(12)?,
+            last_check_message: row.get(13)?,
+            last_checked_at: row.get(14)?,
         })
     }
 }
