@@ -78,21 +78,20 @@
 </script>
 
 <template>
-  <VTModal
-    :open="projectsStore.formOpen"
-    :title="title"
-    :ok-text="okText"
-    :cancel-text="t('common.close')"
-    :loading="projectsStore.importLoading"
-    :width="900"
-    @ok="submitForm"
-    @close="projectsStore.setFormOpen(false)"
-  >
+  <VTModal :open="projectsStore.formOpen" :title="title" :ok-text="okText" :cancel-text="t('common.close')" :loading="projectsStore.importLoading" :width="600" @ok="submitForm" @close="projectsStore.setFormOpen(false)">
     <a-form ref="formRef" class="mx-auto max-w-[720px]" layout="vertical" :model="projectsStore.draft" :rules="formRules">
       <a-row :gutter="[16, 10]">
+
         <a-col v-if="projectsStore.formIntent === 'import'" :span="24">
           <a-form-item class="!mb-2">
             <a-segmented :value="projectsStore.importMode" block size="large" :options="projectImportModeOptions.map((item) => ({ value: item.value, label: t(item.labelKey) }))" @update:value="setImportMode" />
+          </a-form-item>
+        </a-col>
+
+        
+        <a-col :xs="24" :md="24">
+          <a-form-item name="projectType" :label="t('pages.projects.projectType')" class="!mb-2">
+            <a-select :value="projectsStore.draft.projectType" :options="projectTypeOptions" @update:value="updateProjectType(Number($event))" />
           </a-form-item>
         </a-col>
 
@@ -128,15 +127,9 @@
           </a-form-item>
         </a-col>
 
-        <a-col :xs="24" :md="14">
+        <a-col :xs="24" :md="24">
           <a-form-item name="name" :label="t('pages.projects.form.name')" class="!mb-2">
             <a-input :value="projectsStore.draft.name" :placeholder="t('pages.projects.namePlaceholder')" @update:value="projectsStore.setDraftField('name', String($event))" />
-          </a-form-item>
-        </a-col>
-
-        <a-col :xs="24" :md="10">
-          <a-form-item name="projectType" :label="t('pages.projects.projectType')" class="!mb-2">
-            <a-select :value="projectsStore.draft.projectType" :options="projectTypeOptions" @update:value="updateProjectType(Number($event))" />
           </a-form-item>
         </a-col>
       </a-row>

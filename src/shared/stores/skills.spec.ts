@@ -1,7 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useSkillStore } from './skills'
+import { useSkillStore, type SkillItem } from './skills'
 import * as tauriApi from '@/shared/api/tauri'
+
+function buildSkillItem(overrides: Partial<SkillItem> = {}): SkillItem {
+  return {
+    id: 1,
+    versionId: 1,
+    versionNo: 1,
+    key: 'bound-skill',
+    name: 'bound-skill',
+    code: 402,
+    state: 'enabled',
+    summary: 'Summary',
+    categoryCode: 402,
+    installState: 'installed',
+    body: 'Skill body',
+    runtime: {
+      platformRoot: '',
+      libraryPath: '',
+      librarySkillMdPath: '',
+      runtimePath: '',
+      runtimeSkillMdPath: '',
+      libraryExists: true,
+      runtimeExists: true,
+      skillMdValid: true,
+      installState: 602,
+      statusDetail: '',
+      libraryBody: 'Skill body',
+      runtimeBody: 'Skill body',
+      libraryTree: [],
+      runtimeTree: [],
+      installActionReady: false,
+      uninstallActionReady: true,
+      repairActionReady: false,
+      markStaleActionReady: true,
+    },
+    toolIds: [101],
+    ...overrides,
+  }
+}
 
 function buildLocalPreview() {
   return {
@@ -72,6 +110,18 @@ describe('skills store - local skill import', () => {
 
     expect(previewSpy).not.toHaveBeenCalled()
     expect(store.actionError).toBe('请先选择本地 Skill 目录。')
+  })
+
+  it('refuses to delete a skill that is still bound to tools', async () => {
+    const deleteSpy = vi.spyOn(tauriApi, 'deleteSkillAsset')
+
+    const store = useSkillStore()
+    store.items = [buildSkillItem()]
+
+    await store.deleteItem(1)
+
+    expect(deleteSpy).not.toHaveBeenCalled()
+    expect(store.actionError).toBe('技能仍在使用中，请先解绑再删除。已绑定工具 1 个。')
   })
 
   it('keeps GitHub and local preview state isolated when sourceKind switches', async () => {

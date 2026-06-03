@@ -760,6 +760,7 @@ export default {
     skillInputInvalid: '技能信息不完整，请先检查后再保存。',
     skillSaveFailed: '保存技能失败。',
     skillDeleteFailed: '删除技能失败。',
+    skillDeleteBound: '技能仍在使用中，请先解绑再删除。已绑定工具 {tools} 个。',
     skillInstallFailed: '安装技能失败。',
     skillUninstallFailed: '卸载技能失败。',
     skillRepairFailed: '修复技能失败。',

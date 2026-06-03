@@ -78,13 +78,31 @@ pub fn delete_skill_asset(
     app_state: tauri::State<'_, AppContainer>,
     skill_id: i32,
 ) -> AppResponse<bool> {
-    wrap_command!(
-        service: WriteService::with_container(app_state.inner()),
-        call: |service: WriteService| service.delete_skill(skill_id).map(|_| true),
-        error_code: "skill_delete_failed",
-        i18n: "errors.skillDeleteFailed",
-        history: { kind: "operation", title: "Skill delete failed", action: "skill-delete", route: ROUTE_SKILLS },
-    )
+    let service = WriteService::with_container(app_state.inner());
+    match service.delete_skill(skill_id) {
+        Ok(()) => AppResponse::success(true),
+        Err(error) => {
+            crate::commands::history_log::record_command_failure(
+                crate::commands::history_log::CommandFailure {
+                    project_id: None,
+                    tool_id: None,
+                    related_rule_id: None,
+                    kind: "operation",
+                    title: "Skill delete failed",
+                    action: "skill-delete",
+                    detail: &error,
+                    related_path: None,
+                    navigation_target: ROUTE_SKILLS,
+                },
+            );
+            let i18n_key = if error.contains("Unbind it before deleting") {
+                "errors.skillDeleteBound"
+            } else {
+                "errors.skillDeleteFailed"
+            };
+            AppResponse::error("skill_delete_failed", &error, i18n_key)
+        }
+    }
 }
 
 #[tauri::command]

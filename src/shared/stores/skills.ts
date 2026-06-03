@@ -399,6 +399,13 @@ export const useSkillStore = defineStore('skills', {
     },
     async deleteItem(id: number) {
       try {
+        const item = this.items.find((entry) => entry.id === id)
+        if (item && item.toolIds.length > 0) {
+          this.actionError = translateKey('errors.skillDeleteBound', { tools: item.toolIds.length })
+          notifyWarning(this.actionError)
+          return
+        }
+
         const response = await deleteSkillAsset(id)
         if (!response.success) {
           this.actionError = resolveAppError(response.error, 'errors.skillDeleteFailed')

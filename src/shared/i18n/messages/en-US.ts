@@ -758,6 +758,7 @@ export default {
     skillInputInvalid: 'Skill information is incomplete. Check it before saving.',
     skillSaveFailed: 'Failed to save skill.',
     skillDeleteFailed: 'Failed to delete skill.',
+    skillDeleteBound: 'This skill is still in use. Unbind it before deleting. Bound tools: {tools}.',
     skillInstallFailed: 'Failed to install skill.',
     skillUninstallFailed: 'Failed to uninstall skill.',
     skillRepairFailed: 'Failed to repair skill.',
